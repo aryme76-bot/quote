@@ -174,7 +174,7 @@
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
-  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button></div>
+  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button></div>
 </form>
 
 <main class="page">
@@ -386,6 +386,30 @@ async function renderQuoteCanvas(){
     });
   } finally { wrap.remove(); }
 }
+async function shareOrDownload(blob, name){
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (mobile && navigator.canShare && typeof File !== 'undefined'){
+    const file = new File([blob], name, { type: blob.type });
+    if (navigator.canShare({ files: [file] })){
+      try { await navigator.share({ files: [file], title: name }); return; }
+      catch(e){ if (e && e.name === 'AbortError') return; }
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+async function saveJpg(){
+  const btn = document.getElementById('btnJpg'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'JPG 만드는 중…';
+  try {
+    const canvas = await renderQuoteCanvas();
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    await shareOrDownload(blob, pdfName().replace(/\.pdf$/, '.jpg'));
+  } catch(e) {
+    alert('JPG를 만들지 못했습니다. (' + (e && e.message || e) + ')');
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
 async function savePdf(){
   const btn = document.getElementById('btnPdf'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'PDF 만드는 중…';
@@ -397,17 +421,7 @@ async function savePdf(){
     let w = W, h = W * canvas.height / canvas.width;
     if (h > H){ h = H; w = H * canvas.width / canvas.height; }
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', mL + (W - w)/2, mT, w, h);
-    const name = pdfName();
-    const blob = pdf.output('blob');
-    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (mobile && navigator.canShare && typeof File !== 'undefined'){
-      const file = new File([blob], name, { type: 'application/pdf' });
-      if (navigator.canShare({ files: [file] })){
-        try { await navigator.share({ files: [file], title: name }); return; }
-        catch(e){ if (e && e.name === 'AbortError') return; }
-      }
-    }
-    pdf.save(name);
+    await shareOrDownload(pdf.output('blob'), pdfName());
   } catch(e) {
     alert('PDF를 만들지 못했습니다. 인쇄 버튼에서 "PDF로 저장"을 이용해 주세요.\n(' + (e && e.message || e) + ')');
   } finally { btn.disabled = false; btn.textContent = label; }
