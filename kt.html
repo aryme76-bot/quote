@@ -109,6 +109,11 @@
   .sheet .acts .pri{background:var(--red);border-color:var(--red);color:#fff}
   .sheet .close{align-self:center;font:inherit;background:none;border:0;color:var(--muted);padding:6px 12px;cursor:pointer}
   @media print{.sheet{display:none}}
+  .inapp{display:none;background:#fff4d6;color:#4a3a00;border-bottom:1px solid #f0d78a;padding:10px 14px;font-size:13px;line-height:1.5;align-items:center;gap:10px;flex-wrap:wrap}
+  .inapp.on{display:flex}
+  .inapp b{color:#b45309}
+  .inapp a{margin-left:auto;font-weight:700;background:#b45309;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;white-space:nowrap}
+  @media print{.inapp{display:none !important}}
   /* ── 모바일 전용 카드 목록 (PC/인쇄/저장에서는 숨김) ── */
   .mlist{display:none;list-style:none;margin:0;padding:0;flex-direction:column;gap:8px}
   .mlist li{background:var(--page);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -215,6 +220,7 @@
 </style>
 </head>
 <body>
+<div class="inapp" id="inapp"></div>
 <form class="panel" onsubmit="return false">
   <label class="rooms">회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
@@ -386,6 +392,14 @@ function pdfName(){ const r = document.getElementById('inRooms').value; const d 
   ['inRooms','inDate','inTo'].forEach(id => document.getElementById(id).addEventListener('input', render));
   render();
   try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
+  if (/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
+    const bar = document.getElementById('inapp'); const android = /Android/i.test(navigator.userAgent);
+    const here = location.href.replace(/^https?:\/\//, '');
+    bar.innerHTML = android
+      ? `<span><b>카카오톡 안에서 열렸습니다.</b> 여기서는 PDF·JPG 저장이 막힙니다. 크롬으로 열어 주세요.</span><a href="intent://${here}#Intent;scheme=https;package=com.android.chrome;end">크롬으로 열기</a>`
+      : `<span><b>카카오톡 안에서 열렸습니다.</b> 여기서는 PDF·JPG 저장이 막힙니다. 오른쪽 아래 <b>공유 아이콘 → Safari로 열기</b>를 눌러 주세요.</span>`;
+    bar.classList.add('on');
+  }
 })();
 </script>
 
