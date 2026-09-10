@@ -101,7 +101,10 @@
   .panel input:focus{outline:3px solid var(--red-line);outline-offset:1px}
   .panel .auto{color:var(--muted)}
   .panel .auto b{color:var(--ink);font-weight:700}
-  .panel button{margin-left:auto;font:inherit;font-weight:700;padding:8px 16px;border:0;border-radius:8px;background:var(--red);color:#fff;cursor:pointer}
+  .panel .btns{margin-left:auto;display:flex;gap:8px}
+  .panel button{font:inherit;font-weight:700;padding:8px 16px;border:0;border-radius:8px;background:var(--red);color:#fff;cursor:pointer;white-space:nowrap}
+  .panel button.ghost{background:var(--page);color:var(--ink);border:2px solid var(--line)}
+  .panel button:disabled{opacity:.6;cursor:wait}
   .panel button:focus-visible{outline:3px solid var(--red-line);outline-offset:2px}
   @media (max-width:720px){
     .page{padding:32px 20px}
@@ -171,7 +174,7 @@
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
-  <button type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button></div>
 </form>
 
 <main class="page">
@@ -324,6 +327,7 @@ function render(){
     : `인터넷 회선당 할인은 적용되지 않았습니다.`;
 }
 
+function pdfName(){ const r = $('inRooms').value; const d = $('inDate').value.replace(/\D/g,''); return `LG_견적서_${TYPES[$('inType').value].name}_${r}객실_${d}.pdf`; }
 (function init(){
   $('inNet').innerHTML = Object.entries(NET).map(([k,o])=>`<option value="${k}">${o.name}</option>`).join('');
   $('inNet').value = 'slim';
@@ -335,6 +339,79 @@ function render(){
   ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
   render();
 })();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ── PDF 저장: 인쇄용 레이아웃을 그대로 이미지로 그려 A4 1장 PDF로 만든다 (PC 다운로드 / 휴대폰 공유·저장) ──
+const PDF_BRAND = { red:'#e6007e', soft:'#fff0f7', line:'#f3a6cf' };
+function buildPdfStyles(){
+  if (document.getElementById('pdfmode-css')) return;
+  let css = '';
+  for (const sheet of document.styleSheets){
+    let rules; try { rules = sheet.cssRules; } catch(e){ continue; }
+    for (const r of rules){
+      if (r.type !== CSSRule.MEDIA_RULE || r.media.mediaText !== 'print') continue;
+      for (const s of r.cssRules){
+        if (s.type !== CSSRule.STYLE_RULE) continue;
+        const sel = s.selectorText;
+        if (sel === '*' || sel === 'html,body' || sel === 'html, body' || sel === '.panel') continue;
+        const mapped = sel.split(',').map(x => { x = x.trim(); return (x === ':root' || x === 'body') ? '.pdfmode' : '.pdfmode ' + x; }).join(',');
+        css += mapped + '{' + s.style.cssText.replace(/zoom:[^;]+;?/g, '') + '}\n';
+      }
+    }
+  }
+  css += `.pdfmode{display:none;width:718px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
+.pdfmode .page{max-width:none}
+.pdfmode .calc .sum dt.g{color:var(--ink);font-weight:700}
+.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
+  const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
+}
+async function renderQuoteCanvas(){
+  buildPdfStyles();
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode';
+  const clone = document.querySelector('main.page').cloneNode(true);
+  clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
+    const g = el.classList.contains('grand');
+    while (el.firstChild){ const c = el.firstChild; if (g && c.nodeType === 1) c.classList.add('g'); el.parentNode.insertBefore(c, el); }
+    el.remove();
+  });
+  wrap.appendChild(clone); document.body.appendChild(wrap);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    return await html2canvas(wrap, {
+      scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, width: 718, windowWidth: 1100,
+      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; }
+    });
+  } finally { wrap.remove(); }
+}
+async function savePdf(){
+  const btn = document.getElementById('btnPdf'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'PDF 만드는 중…';
+  try {
+    const canvas = await renderQuoteCanvas();
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const mL = 10, mT = 10, W = 210 - 2*mL, H = 297 - 2*mT;
+    let w = W, h = W * canvas.height / canvas.width;
+    if (h > H){ h = H; w = H * canvas.width / canvas.height; }
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', mL + (W - w)/2, mT, w, h);
+    const name = pdfName();
+    const blob = pdf.output('blob');
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (mobile && navigator.canShare && typeof File !== 'undefined'){
+      const file = new File([blob], name, { type: 'application/pdf' });
+      if (navigator.canShare({ files: [file] })){
+        try { await navigator.share({ files: [file], title: name }); return; }
+        catch(e){ if (e && e.name === 'AbortError') return; }
+      }
+    }
+    pdf.save(name);
+  } catch(e) {
+    alert('PDF를 만들지 못했습니다. 인쇄 버튼에서 "PDF로 저장"을 이용해 주세요.\n(' + (e && e.message || e) + ')');
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
 </script>
 
 </body>
