@@ -480,14 +480,22 @@ function buildPdfStyles(){
   css += `.pdfmode{display:none;width:640px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
 .pdfmode .page{max-width:none}
 .pdfmode .calc .sum dt.g{color:var(--ink);font-weight:700}
-.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
+.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}
+.pdfmode.narrow .calc{grid-template-columns:1fr 1.15fr;gap:12px}
+.pdfmode.narrow .calc .sum{padding-left:12px;column-gap:10px}
+.pdfmode.narrow .calc .sum dt,.pdfmode.narrow .total .side dt,.pdfmode.narrow .total .big .vat,.pdfmode.narrow .meta dt{white-space:nowrap}
+.pdfmode.narrow .total{grid-template-columns:1fr 1fr;gap:12px}
+.pdfmode.narrow .total .big{padding-right:12px}
+.pdfmode.narrow .total .big .amount{font-size:26px}
+.pdfmode.narrow .sec-head small{font-size:9.5px}
+.pdfmode.narrow .cmp .tile .v{font-size:13px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
 const PHONE_W = 425;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
 async function renderQuoteCanvas(mode){
   const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
   buildPdfStyles();
-  const wrap = document.createElement('div'); wrap.className = 'pdfmode'; wrap.style.width = W + 'px';
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode' + (mode === 'phone' ? ' narrow' : ''); wrap.style.width = W + 'px';
   const clone = document.querySelector('main.page').cloneNode(true);
   clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
     const g = el.classList.contains('grand');
