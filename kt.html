@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KT 멀티룸 자동 견적서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#ffffff; --page:#ffffff; --ink:#1b1b1f; --muted:#6f7076; --faint:#9a9ba1;
+    --panel:#f3f3f5; --line:#e4e4e8; --head:#1b1b1f; --head-ink:#ffffff;
+    --red:#e4002b; --red-soft:#fff2f3; --red-line:#f2a7b1;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+      --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+      --red:#ff4d63; --red-soft:#2a1a1d; --red-line:#6a2a34;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+    --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+    --red:#ff4d63; --red-soft:#2a1a1d; --red-line:#6a2a34;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5}
+  .page{max-width:900px;margin:0 auto;background:var(--page);padding:56px 56px 40px;display:flex;flex-direction:column;gap:36px}
+  .brand{display:flex;align-items:flex-start;gap:14px}
+  .brand .kt{font-size:38px;font-weight:900;color:var(--red);letter-spacing:-1px;line-height:1}
+  .brand .sub{font-size:12px;letter-spacing:.08em;color:var(--muted);line-height:1.35;padding-top:5px}
+  .brand .sub b{display:block;color:var(--ink);font-weight:700}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+  .header .lead{font-size:15px;color:var(--muted);margin-top:8px}
+  .meta{background:var(--panel);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto auto;column-gap:56px;row-gap:10px;font-size:14px;min-width:300px}
+  .meta dt{color:var(--muted);margin:0}
+  .meta dd{margin:0;text-align:right;font-weight:500}
+  .total{border:2px solid var(--red);background:var(--red-soft);border-radius:16px;padding:26px 32px;display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+  .total .big{border-right:1px solid var(--red-line);padding-right:28px}
+  .total .big .label{font-size:15px;color:var(--ink);margin-bottom:6px}
+  .total .big .amount{font-size:48px;font-weight:900;color:var(--red);letter-spacing:-.02em;line-height:1.1}
+  .total .big .unit{font-size:18px;font-weight:700;color:var(--red);margin-left:8px}
+  .total .big .vat{font-size:13px;color:var(--muted);margin-left:8px}
+  .total .side{display:grid;grid-template-columns:auto auto;align-content:center;row-gap:14px;column-gap:24px;font-size:15px}
+  .total .side dt{color:var(--muted);margin:0}
+  .total .side dd{margin:0;text-align:right;font-size:18px;font-weight:500}
+  h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sec-head{display:flex;justify-content:space-between;align-items:baseline}
+  .sec-head small{font-size:12px;color:var(--faint)}
+  .section{display:flex;flex-direction:column;gap:14px}
+  .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+  thead th{background:var(--head);color:var(--head-ink);font-weight:700;padding:15px 12px;text-align:center;white-space:nowrap}
+  thead th:first-child{border-top-left-radius:13px}
+  thead th:last-child{border-top-right-radius:13px}
+  tbody td{padding:16px 12px;text-align:center;border-top:1px solid var(--line)}
+  tbody tr:nth-child(even){background:var(--panel)}
+  tbody td.num{text-align:right;padding-right:28px}
+  tbody td.svc{font-weight:500}
+  tbody td.hl{color:var(--red);font-weight:500}
+  .calc{background:var(--panel);border-radius:14px;padding:22px 28px;display:grid;grid-template-columns:1.2fr 1fr;gap:28px}
+  .calc .formula .label{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .calc .formula .expr{font-size:14px;line-height:1.7}
+  .calc .formula .result{font-size:16px;color:var(--red);font-weight:500;margin-top:6px}
+  .calc .sum{border-left:1px solid var(--line);padding-left:28px;display:grid;grid-template-columns:auto auto;align-content:center;row-gap:10px;column-gap:20px;font-size:15px}
+  .calc .sum dt{margin:0;color:var(--muted)}
+  .calc .sum dd{margin:0;text-align:right;font-weight:500}
+  .calc .sum .grand dt{color:var(--ink);font-weight:700}
+  .calc .sum .grand dd{color:var(--red);font-weight:900;font-size:22px}
+  .notice{border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14px}
+  .notice li{position:relative;padding-left:20px}
+  .notice li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .notice .note{color:var(--muted);font-size:13px}
+  footer{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px}
+  footer b{font-size:15px;font-weight:700}
+  footer span{color:var(--muted)}
+  .inst-total{display:flex;gap:28px;justify-content:flex-end;font-size:15px;padding:4px 8px 0}
+  .inst-total span{color:var(--muted)}
+  .inst-total b{color:var(--red);font-weight:900;font-size:18px;margin-left:8px}
+  .calc .sum dd.hl{color:var(--red)}
+  .panel{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;font-size:14px}
+  .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  .panel input.to{width:190px}
+  .panel input.date{width:130px;font-size:14px;font-weight:500;border-color:var(--line);text-align:left}
+  .panel input:focus{outline:3px solid var(--red-line);outline-offset:1px}
+  .panel .auto{color:var(--muted)}
+  .panel .auto b{color:var(--ink);font-weight:700}
+  .panel button{margin-left:auto;font:inherit;font-weight:700;padding:8px 16px;border:0;border-radius:8px;background:var(--red);color:#fff;cursor:pointer}
+  .panel button:focus-visible{outline:3px solid var(--red-line);outline-offset:2px}
+  @media (max-width:720px){
+    .page{padding:32px 20px}
+    h1{font-size:30px}
+    .total,.calc{grid-template-columns:1fr}
+    .total .big{border-right:0;border-bottom:1px solid var(--red-line);padding-right:0;padding-bottom:20px}
+    .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+    .meta{min-width:0;width:100%}
+  }
+  @page{size:A4 portrait;margin:10mm 12mm}
+  @media print{
+    html,body{width:auto;height:auto}
+    :root{--bg:#fff;--page:#fff}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
+    .panel{display:none}
+    .page{max-width:none;padding:0;gap:11px}
+    .brand .kt{font-size:24px}
+    .brand .sub{font-size:11px}
+    h1{font-size:22px}
+    .header .lead{font-size:12px;margin-top:3px}
+    .meta{padding:7px 12px;row-gap:3px;font-size:10.5px;border-radius:8px;column-gap:36px}
+    .total{padding:9px 18px;gap:14px;border-radius:10px}
+    .total .big .label{font-size:13px;margin-bottom:2px}
+    .total .big .amount{font-size:28px}
+    .total .big .unit{font-size:15px}
+    .total .big .vat{font-size:11px}
+    .total .side{font-size:11px;row-gap:3px}
+    .total .side dd{font-size:12.5px}
+    h2{font-size:14.5px}
+    .section{gap:6px}
+    .table-wrap{border-radius:10px}
+    table{font-size:10.5px;min-width:0}
+    thead th{padding:6px 8px}
+    thead th:first-child{border-top-left-radius:9px}
+    thead th:last-child{border-top-right-radius:9px}
+    tbody td{padding:5px 8px}
+    tbody td.num{padding-right:18px}
+    .calc{padding:8px 16px;gap:16px;border-radius:8px}
+    .calc .formula .label,.calc .formula .expr{font-size:10.5px}
+    .calc .formula .label{margin-bottom:3px}
+    .calc .formula .result{font-size:13px}
+    .calc .sum{font-size:11px;row-gap:2px}
+    .calc .sum .grand dd{font-size:15px}
+    .inst-total{font-size:11px;padding:0 6px}
+    .inst-total b{font-size:13px}
+    .notice{padding:8px 14px;gap:3px;font-size:10.5px;border-radius:8px}
+    .notice .note{font-size:10.5px}
+    footer{margin-top:0;padding-top:6px;font-size:10px}
+    footer b{font-size:12.5px}
+    .section,.total,.calc,.notice,tr{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<form class="panel" onsubmit="return false">
+  <label>회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
+  <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
+  <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
+  <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 기본TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
+  <button type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+</form>
+<main class="page">
+  <div class="brand">
+    <div class="kt">KT</div>
+    <div class="sub"><b>BUSINESS</b>SOLUTION</div>
+  </div>
+
+  <header class="header">
+    <div>
+      <h1>KT 기업 상품 견적서</h1>
+      <div class="lead">기업 인터넷 · 지니TV Biz · <span data-v="rooms"></span>객실 기준</div>
+    </div>
+    <dl class="meta">
+      <dt>견적일자</dt><dd><span data-v="date"></span></dd>
+      <dt>수신</dt><dd><span data-v="to"></span></dd>
+      <dt>견적기준</dt><dd>3년 약정 · 결합</dd>
+    </dl>
+  </header>
+
+  <section class="total" aria-label="월 납부 예상금액">
+    <div class="big">
+      <div class="label">월 납부 예상금액</div>
+      <div><span class="amount"><span data-v="total"></span></span><span class="unit">원</span><span class="vat">(VAT 포함)</span></div>
+    </div>
+    <dl class="side">
+      <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+      <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+    </dl>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>상품 구성</h2><small>단위: 원 / 월</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>서비스</th><th>구분</th><th>속도/채널</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가합계</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="calc">
+      <div class="formula">
+        <div class="label">월 공급가액 계산</div>
+        <div class="expr"><span data-v="formula"></span></div>
+        <div class="result">= <span data-v="supplyBefore"></span>원</div>
+      </div>
+      <dl class="sum">
+        <span id="disc" style="display:contents"></span>
+        <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+        <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+        <div class="grand" style="display:contents"><dt>월 합계</dt><dd><span data-v="total"></span>원</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section install">
+    <div class="sec-head"><h2>설치비 (최초 1회)</h2><small>단위: 원 · 동일 장소 · 동일 설치 · 동일 명의 기준</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>수량</th><th>평일 단가</th><th>주말 단가</th><th>평일 금액</th><th>주말 금액</th></tr>
+        </thead>
+        <tbody id="inst"></tbody>
+      </table>
+    </div>
+    <div class="inst-total">
+      <div><span>평일 총 설치비</span><b><span data-v="installWd"></span>원</b></div>
+      <div><span>주말·공휴일 총 설치비</span><b><span data-v="installWe"></span>원</b></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>계약 및 설치 안내</h2>
+    <ul class="notice">
+      <li>3년 약정 및 결합 조건 기준이며, 월요금 단가는 부가세 별도입니다.</li>
+      <li>객실 <span data-v="rooms"></span>실 기준으로 인터넷 <span data-v="internet"></span>회선, 지니TV Biz 기본 <span data-v="tvBasic"></span>대 + 추가 <span data-v="tvAdd"></span>대, Wi-Fi 단말기 <span data-v="wifi"></span>대로 구성되었습니다.</li>
+      <li id="discnote"></li>
+      <li>설치비는 인터넷 첫 1회선과 TV 1대만 기본 단가, 나머지는 다회선·추가 단가가 적용되며 최초 1회 별도 청구됩니다. 주말 설치비는 토·일·공휴일에 적용됩니다.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>본 견적은 상담 기준이며 최종 계약 및 개통 내역을 우선합니다.</span>
+  </footer>
+</main>
+
+<script>
+// ── 엑셀 'KT 멀티룸 자동견적' 단가 · 계산 규칙 ──
+const P = { internet:{base:25000,rental:0}, tvBasic:{base:12000,rental:3000}, tvAdd:{base:7200,rental:3000}, wifi:{base:1000,rental:0} };
+const INSTALL = [
+  ['인터넷 (첫 1회선)', 'internetFirst', 32000, 41000],
+  ['기본 TV (설치비 기준 1대)', 'tvFirst', 24200, 30250],
+  ['다회선 인터넷', 'internetMore', 16000, 25000],
+  ['추가 TV', 'tvMore', 15400, 19250],
+];
+const ROOMS_PER_LINE = 8, DISCOUNT_MIN_TV = 30;
+const won = n => n.toLocaleString('ko-KR');
+
+function compute(rooms){
+  const internet = Math.ceil(rooms / ROOMS_PER_LINE);   // 인터넷 메인 회선수 = 회선수 ÷ 8 올림
+  const tvBasic = internet;                             // 기본 TV = 인터넷 회선수
+  const tvAdd = rooms - internet;                       // 추가 TV = 회선수 − 메인 회선수
+  const wifi = rooms;                                   // Wi-Fi = 총 회선수
+  const tvTotal = tvBasic + tvAdd;
+  const parts = [internet*P.internet.base, tvBasic*P.tvBasic.base, tvBasic*P.tvBasic.rental,
+                 tvAdd*P.tvAdd.base, tvAdd*P.tvAdd.rental, wifi*P.wifi.base];
+  const supplyBefore = parts.reduce((a,b)=>a+b,0);
+  const discount = tvTotal >= DISCOUNT_MIN_TV ? Math.round(tvAdd * P.tvAdd.base * 0.1) : 0;
+  const supply = supplyBefore - discount, vat = Math.round(supply * 0.1);
+  const q = { internetFirst: internet>0?1:0, tvFirst: tvTotal>0?1:0, internetMore: Math.max(internet-1,0), tvMore: Math.max(tvTotal-1,0) };
+  const inst = INSTALL.map(([name,k,wd,we]) => ({name, qty:q[k], wd, we, wdT:q[k]*wd, weT:q[k]*we}));
+  return { rooms, internet, tvBasic, tvAdd, wifi, tvTotal, parts, supplyBefore, discount, supply, vat, total: supply+vat,
+           inst, installWd: inst.reduce((a,i)=>a+i.wdT,0), installWe: inst.reduce((a,i)=>a+i.weT,0) };
+}
+
+function row(svc, kind, speed, term, qty, unit, total, hl){
+  return `<tr><td class="svc">${svc}</td><td>${kind}</td><td>${speed}</td><td>${term}</td><td>${qty}</td><td class="num">${won(unit)}</td><td class="num${hl?' hl':''}">${won(total)}</td></tr>`;
+}
+
+function render(){
+  const rooms = Math.max(1, Math.min(999, parseInt(document.getElementById('inRooms').value, 10) || 1));
+  const d = compute(rooms);
+  const v = { rooms, date: document.getElementById('inDate').value, to: (document.getElementById('inTo').value.trim() || '고객사') + ' 귀중', total: won(d.total), supply: won(d.supply), vat: won(d.vat),
+              supplyBefore: won(d.supplyBefore), installWd: won(d.installWd), installWe: won(d.installWe),
+              internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, formula: d.parts.map(won).join(' + ') };
+  document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
+  document.title = `KT 멀티룸 자동 견적서`;
+  document.getElementById('rows').innerHTML = [
+    row('인터넷 베이직','기본료','500M','3년',d.internet,P.internet.base,d.parts[0]),
+    row('지니TV Biz 기본','기본료','라이트','3년',d.tvBasic,P.tvBasic.base,d.parts[1]),
+    row('','모뎀 임대료','올인원2','-',d.tvBasic,P.tvBasic.rental,d.parts[2]),
+    row('지니TV Biz 추가','기본료','라이트','3년',d.tvAdd,P.tvAdd.base,d.parts[3]),
+    row('','모뎀 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
+    row('Wi-Fi 단말기','기기 임대료','-','3년',d.wifi,P.wifi.base,d.parts[5],true),
+  ].join('');
+  document.getElementById('inst').innerHTML = d.inst.map(i =>
+    `<tr><td class="svc">${i.name}</td><td>${i.qty}</td><td class="num">${won(i.wd)}</td><td class="num">${won(i.we)}</td><td class="num">${won(i.wdT)}</td><td class="num">${won(i.weT)}</td></tr>`).join('');
+  document.getElementById('disc').innerHTML = d.discount
+    ? `<dt>할인 전 공급가액</dt><dd>${won(d.supplyBefore)}원</dd><dt>공동청약할인</dt><dd class="hl">-${won(d.discount)}원</dd>` : '';
+  document.getElementById('discnote').textContent = d.discount
+    ? `공동청약할인(TV ${d.tvTotal}회선, 30회선 이상)이 적용되어 추가 TV 기본료의 10%인 월 ${won(d.discount)}원이 할인되었습니다.`
+    : `공동청약할인은 TV 합계 30회선 이상일 때 적용되며, 본 견적(TV ${d.tvTotal}회선)은 미적용입니다.`;
+}
+
+(function init(){
+  const t = new Date();
+  document.getElementById('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
+  ['inRooms','inDate','inTo'].forEach(id => document.getElementById(id).addEventListener('input', render));
+  render();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LG U+ 멀티라인 자동 견적서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#ffffff; --page:#ffffff; --ink:#1b1b1f; --muted:#6f7076; --faint:#9a9ba1;
+    --panel:#f3f3f5; --line:#e4e4e8; --head:#1b1b1f; --head-ink:#ffffff;
+    --red:#e6007e; --red-soft:#fff0f7; --red-line:#f3a6cf;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+      --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+      --red:#ff5fb3; --red-soft:#2a1722; --red-line:#6b2a4f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+    --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+    --red:#ff5fb3; --red-soft:#2a1722; --red-line:#6b2a4f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5}
+  .page{max-width:900px;margin:0 auto;background:var(--page);padding:56px 56px 40px;display:flex;flex-direction:column;gap:36px}
+  .brand{display:flex;align-items:flex-start;gap:14px}
+  .brand .kt{font-size:38px;font-weight:900;color:var(--red);letter-spacing:-1px;line-height:1}
+  .brand .sub{font-size:12px;letter-spacing:.08em;color:var(--muted);line-height:1.35;padding-top:5px}
+  .brand .sub b{display:block;color:var(--ink);font-weight:700}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+  .header .lead{font-size:15px;color:var(--muted);margin-top:8px}
+  .meta{background:var(--panel);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto auto;column-gap:56px;row-gap:10px;font-size:14px;min-width:300px}
+  .meta dt{color:var(--muted);margin:0}
+  .meta dd{margin:0;text-align:right;font-weight:500}
+  .total{border:2px solid var(--red);background:var(--red-soft);border-radius:16px;padding:26px 32px;display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+  .total .big{border-right:1px solid var(--red-line);padding-right:28px}
+  .total .big .label{font-size:15px;color:var(--ink);margin-bottom:6px}
+  .total .big .amount{font-size:48px;font-weight:900;color:var(--red);letter-spacing:-.02em;line-height:1.1}
+  .total .big .unit{font-size:18px;font-weight:700;color:var(--red);margin-left:8px}
+  .total .big .vat{font-size:13px;color:var(--muted);margin-left:8px}
+  .total .side{display:grid;grid-template-columns:auto auto;align-content:center;row-gap:14px;column-gap:24px;font-size:15px}
+  .total .side dt{color:var(--muted);margin:0}
+  .total .side dd{margin:0;text-align:right;font-size:18px;font-weight:500}
+  h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sec-head{display:flex;justify-content:space-between;align-items:baseline}
+  .sec-head small{font-size:12px;color:var(--faint)}
+  .section{display:flex;flex-direction:column;gap:14px}
+  .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+  thead th{background:var(--head);color:var(--head-ink);font-weight:700;padding:15px 12px;text-align:center;white-space:nowrap}
+  thead th:first-child{border-top-left-radius:13px}
+  thead th:last-child{border-top-right-radius:13px}
+  tbody td{padding:16px 12px;text-align:center;border-top:1px solid var(--line)}
+  tbody tr:nth-child(even){background:var(--panel)}
+  tbody td.num{text-align:right;padding-right:28px}
+  tbody td.svc{font-weight:500}
+  tbody td.hl{color:var(--red);font-weight:500}
+  .calc{background:var(--panel);border-radius:14px;padding:22px 28px;display:grid;grid-template-columns:1.2fr 1fr;gap:28px}
+  .calc .formula .label{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .calc .formula .expr{font-size:14px;line-height:1.7}
+  .calc .formula .result{font-size:16px;color:var(--red);font-weight:500;margin-top:6px}
+  .calc .sum{border-left:1px solid var(--line);padding-left:28px;display:grid;grid-template-columns:auto auto;align-content:center;row-gap:10px;column-gap:20px;font-size:15px}
+  .calc .sum dt{margin:0;color:var(--muted)}
+  .calc .sum dd{margin:0;text-align:right;font-weight:500}
+  .calc .sum .grand dt{color:var(--ink);font-weight:700}
+  .calc .sum .grand dd{color:var(--red);font-weight:900;font-size:22px}
+  .notice{border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14px}
+  .notice li{position:relative;padding-left:20px}
+  .notice li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .notice .note{color:var(--muted);font-size:13px}
+  footer{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px}
+  footer b{font-size:15px;font-weight:700}
+  footer span{color:var(--muted)}
+  .inst-total{display:flex;gap:28px;justify-content:flex-end;font-size:15px;padding:4px 8px 0}
+  .inst-total span{color:var(--muted)}
+  .inst-total b{color:var(--red);font-weight:900;font-size:18px;margin-left:8px}
+  .calc .sum dd.hl{color:var(--red)}
+  .panel{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;font-size:14px}
+  .panel select{font:inherit;font-weight:700;font-size:14px;padding:7px 10px;border:2px solid var(--line);border-radius:8px;background:var(--page);color:var(--ink)}
+  .panel select:focus{outline:3px solid var(--red-line);outline-offset:1px}
+  .brand .lg{font-size:30px;font-weight:900;color:var(--red);letter-spacing:-.5px;line-height:1}
+  .brand .lg small{font-size:16px;font-weight:700;margin-left:2px}
+  .cmp{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .cmp .tile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+  .cmp .tile.on{border-color:var(--red);background:var(--red-soft)}
+  .cmp .tile .t{font-size:13px;color:var(--muted)}
+  .cmp .tile .v{font-size:20px;font-weight:900;color:var(--ink)}
+  .cmp .tile.on .v{color:var(--red)}
+  .cmp .tile .s{font-size:12px;color:var(--muted)}
+  .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  .panel input.to{width:190px}
+  .panel label.chk{color:var(--ink);font-weight:500}
+  .panel input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--red)}
+  .panel input.date{width:130px;font-size:14px;font-weight:500;border-color:var(--line);text-align:left}
+  .panel input:focus{outline:3px solid var(--red-line);outline-offset:1px}
+  .panel .auto{color:var(--muted)}
+  .panel .auto b{color:var(--ink);font-weight:700}
+  .panel button{margin-left:auto;font:inherit;font-weight:700;padding:8px 16px;border:0;border-radius:8px;background:var(--red);color:#fff;cursor:pointer}
+  .panel button:focus-visible{outline:3px solid var(--red-line);outline-offset:2px}
+  @media (max-width:720px){
+    .page{padding:32px 20px}
+    h1{font-size:30px}
+    .total,.calc{grid-template-columns:1fr}
+    .total .big{border-right:0;border-bottom:1px solid var(--red-line);padding-right:0;padding-bottom:20px}
+    .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+    .meta{min-width:0;width:100%}
+  }
+  @page{size:A4 portrait;margin:10mm 12mm}
+  @media print{
+    html,body{width:auto;height:auto}
+    :root{--bg:#fff;--page:#fff}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
+    .panel{display:none}
+    .page{max-width:none;padding:0;gap:11px}
+    .brand .kt{font-size:24px}
+    .brand .sub{font-size:11px}
+    h1{font-size:22px}
+    .header .lead{font-size:12px;margin-top:3px}
+    .meta{padding:7px 12px;row-gap:3px;font-size:10.5px;border-radius:8px;column-gap:36px}
+    .total{padding:9px 18px;gap:14px;border-radius:10px}
+    .total .big .label{font-size:13px;margin-bottom:2px}
+    .total .big .amount{font-size:28px}
+    .total .big .unit{font-size:15px}
+    .total .big .vat{font-size:11px}
+    .total .side{font-size:11px;row-gap:3px}
+    .total .side dd{font-size:12.5px}
+    h2{font-size:14.5px}
+    .section{gap:6px}
+    .table-wrap{border-radius:10px}
+    table{font-size:10.5px;min-width:0}
+    thead th{padding:6px 8px}
+    thead th:first-child{border-top-left-radius:9px}
+    thead th:last-child{border-top-right-radius:9px}
+    tbody td{padding:5px 8px}
+    tbody td.num{padding-right:18px}
+    .calc{padding:8px 16px;gap:16px;border-radius:8px}
+    .calc .formula .label,.calc .formula .expr{font-size:10.5px}
+    .calc .formula .label{margin-bottom:3px}
+    .calc .formula .result{font-size:13px}
+    .calc .sum{font-size:11px;row-gap:2px}
+    .calc .sum .grand dd{font-size:15px}
+    .inst-total{font-size:11px;padding:0 6px}
+    .inst-total b{font-size:13px}
+    .cmp{gap:8px}
+    .cmp .tile{padding:7px 12px;border-radius:8px;gap:2px}
+    .cmp .tile .v{font-size:14px}
+    .cmp .tile .t,.cmp .tile .s{font-size:10.5px}
+    .notice{padding:8px 14px;gap:3px;font-size:10.5px;border-radius:8px}
+    .notice .note{font-size:10.5px}
+    footer{margin-top:0;padding-top:6px;font-size:10px}
+    footer b{font-size:12.5px}
+    .section,.total,.calc,.notice,tr{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<form class="panel" onsubmit="return false">
+  <label>회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
+  <label>구분 <select id="inType" aria-label="구분"><option value="new">신규</option><option value="re">재약정</option></select></label>
+  <label>약정 <select id="inTerm" aria-label="약정"><option value="3">3년</option><option value="5">5년</option></select></label>
+  <label>인터넷 <select id="inNet" aria-label="인터넷 상품"></select></label>
+  <label>IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
+  <label class="chk"><input id="inDisc" type="checkbox" aria-label="인터넷 회선당 6,000원 할인"> 인터넷 회선당 6,000원 할인 (VAT 별도)</label>
+  <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
+  <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
+  <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
+  <button type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+</form>
+
+<main class="page">
+  <div class="brand">
+    <div class="lg">LG<small>U+</small></div>
+    <div class="sub"><b>BUSINESS</b>MULTI LINE</div>
+  </div>
+
+  <header class="header">
+    <div>
+      <h1>LG U+ 멀티라인 견적서</h1>
+      <div class="lead">기업 인터넷 · IPTV (1:8 구조) · <span data-v="typeLabel"></span> · <span data-v="rooms"></span>객실 기준</div>
+    </div>
+    <dl class="meta">
+      <dt>견적일자</dt><dd><span data-v="date"></span></dd>
+      <dt>수신</dt><dd><span data-v="to"></span></dd>
+      <dt>견적기준</dt><dd><span data-v="typeLabel"></span> · <span data-v="termLabel"></span> 약정 · <span data-v="netName"></span> · <span data-v="tvName"></span></dd>
+    </dl>
+  </header>
+
+  <section class="total" aria-label="월 납부 예상금액">
+    <div class="big">
+      <div class="label">월 납부 예상금액</div>
+      <div><span class="amount" data-v="total"></span><span class="unit">원</span><span class="vat">(VAT 포함)</span></div>
+    </div>
+    <dl class="side">
+      <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+      <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+      <dt>설치비</dt><dd>무료</dd>
+    </dl>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>상품 구성</h2><small>단위: 원 / 월 · VAT 별도</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>서비스</th><th>구분</th><th>상품</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가합계</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="calc">
+      <div class="formula">
+        <div class="label">월 공급가액 계산</div>
+        <div class="expr"><span data-v="formula"></span></div>
+        <div class="result">= <span data-v="supply"></span>원</div>
+      </div>
+      <dl class="sum">
+        <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+        <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+        <div class="grand" style="display:contents"><dt>월 합계</dt><dd><span data-v="total"></span>원</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>약정 기간별 비교</h2><small>같은 구성 · VAT 포함 월 납부액</small></div>
+    <div class="cmp" id="cmp"></div>
+  </section>
+
+  <section class="section">
+    <h2>계약 및 설치 안내</h2>
+    <ul class="notice">
+      <li><span data-v="typeLabel"></span> <span data-v="termLabel"></span> 약정 기준이며, 월요금 단가는 부가세 별도입니다.</li>
+      <li>객실 <span data-v="rooms"></span>실 기준으로 인터넷 <span data-v="internet"></span>회선, IPTV 주 <span data-v="tvBasic"></span>대 + 추가 <span data-v="tvAdd"></span>대(인터넷 1회선당 최대 8대), Wi-Fi <span data-v="wifi"></span>대로 구성되었습니다.</li>
+      <li id="settopnote"></li>
+      <li id="discnote"></li>
+      <li>설치비는 무료입니다. (최초 설치 시 별도 청구 없음)</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>본 견적은 상담 기준이며 최종 계약 및 개통 내역을 우선합니다.</span>
+  </footer>
+</main>
+
+<script>
+// ── LG U+ 멀티라인 요금표 (단위: 원/월, VAT 별도) · 약정 {3년, 5년} ──
+const NET = {
+  gwang:  { name:'멀티라인 (광랜)',     price:{3:25000,5:20000} },
+  slim:   { name:'멀티라인 (기가슬림)', price:{3:30000,5:25000} },
+  giga:   { name:'멀티라인 (기가)',     price:{3:35000,5:30000} },
+};
+const TV = {
+  normal:  { name:'일반형',   main:{3:9900, 5:8000},  add:{3:5950,5:5000} },
+  basic:   { name:'베이직',   main:{3:11000,5:9000},  add:{3:6500,5:5500} },
+  silsok:  { name:'실속형',   main:{3:12000,5:10000}, add:{3:7000,5:6000} },
+  gibon:   { name:'기본형',   main:{3:13000,5:11000}, add:{3:7500,5:6500} },
+  premium: { name:'프리미엄', main:{3:15000,5:13000}, add:{3:8500,5:7500} },
+};
+// 구분별 선택 가능 상품과 셋탑 임대료
+const TYPES = {
+  new: { name:'신규',   tv:['silsok','gibon','premium'],                    settop: k => 2000, discDefault:false },
+  re:  { name:'재약정', tv:['normal','basic','silsok','gibon','premium'],   settop: k => (['silsok','gibon','premium'].includes(k) ? 1000 : 0), discDefault:true },   // 일반형·베이직은 셋탑 임대료 없음
+};
+const NET_DISC = 6000;      // 인터넷 1회선당 할인 (VAT 별도)
+const WIFI = 0;             // Wi-Fi 무료
+const ROOMS_PER_LINE = 8;   // 1:8 구조
+const won = n => n.toLocaleString('ko-KR');
+
+function compute(rooms, term, typeKey, netKey, tvKey, disc){
+  const internet = Math.ceil(rooms / ROOMS_PER_LINE);
+  const tvBasic = internet, tvAdd = rooms - internet, wifi = rooms, tvTotal = rooms;
+  const net = NET[netKey], tv = TV[tvKey], settop = TYPES[typeKey].settop(tvKey);
+  const lines = [
+    { svc: net.name, kind:'기본료', prod:'인터넷', qty: internet, unit: net.price[term] },
+  ];
+  if (disc) lines.push({ svc: '인터넷 할인', kind:'회선당 할인', prod:'-', qty: internet, unit: -NET_DISC, hl:true });
+  lines.push(
+    { svc: 'IPTV 주', kind:'기본료', prod: tv.name, qty: tvBasic, unit: tv.main[term] },
+    { svc: 'IPTV 추가', kind:'기본료', prod: tv.name, qty: tvAdd, unit: tv.add[term] },
+    { svc: '셋탑박스', kind:'임대료', prod:'-', qty: tvTotal, unit: settop },
+    { svc: 'Wi-Fi', kind:'기기 임대료', prod:'100M/기가', qty: wifi, unit: WIFI },
+  );
+  const out = lines.map(l => ({...l, total: l.qty * l.unit}));
+  const supply = out.reduce((a,l)=>a+l.total,0), vat = Math.round(supply*0.1);
+  return { rooms, internet, tvBasic, tvAdd, wifi, tvTotal, settop, lines: out, supply, vat, total: supply+vat, discTotal: disc ? internet*NET_DISC : 0 };
+}
+
+const $ = id => document.getElementById(id);
+function fillTv(){
+  const typeKey = $('inType').value, cur = $('inTv').value;
+  $('inTv').innerHTML = TYPES[typeKey].tv.map(k=>`<option value="${k}">${TV[k].name}</option>`).join('');
+  $('inTv').value = TYPES[typeKey].tv.includes(cur) ? cur : TYPES[typeKey].tv[0];
+}
+
+function render(){
+  const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
+  const term = +$('inTerm').value, typeKey = $('inType').value, netKey = $('inNet').value, tvKey = $('inTv').value, disc = $('inDisc').checked;
+  const d = compute(rooms, term, typeKey, netKey, tvKey, disc);
+  const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
+              netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat),
+              internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, tvTotal: d.tvTotal, settop: won(d.settop),
+              formula: d.lines.map(l => l.total < 0 ? `(${won(l.total)})` : won(l.total)).join(' + ') };
+  document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
+  $('rows').innerHTML = d.lines.map(l =>
+    `<tr><td class="svc">${l.svc}</td><td>${l.kind}</td><td>${l.prod}</td><td>${l.kind==='기본료'?term+'년':'-'}</td><td>${l.qty}</td>` +
+    `<td class="num${l.hl?' hl':''}">${l.unit===0?(l.svc==='셋탑박스'?'없음':'무료'):won(l.unit)}</td><td class="num${l.hl?' hl':''}">${l.unit===0?'0':won(l.total)}</td></tr>`).join('');
+  $('cmp').innerHTML = [3,5].map(t => {
+    const c = compute(rooms, t, typeKey, netKey, tvKey, disc);
+    return `<div class="tile${t===term?' on':''}"><div class="t">${t}년 약정</div><div class="v">${won(c.total)}원</div><div class="s">공급가액 ${won(c.supply)}원 · 객실당 ${won(Math.round(c.supply/rooms))}원</div></div>`;
+  }).join('');
+  $('settopnote').textContent = d.settop
+    ? `셋탑박스 임대료는 TV 1대당 월 ${won(d.settop)}원으로 총 ${d.tvTotal}대가 포함되었으며, Wi-Fi(100M/기가)는 무료입니다.`
+    : `${TV[tvKey].name} 재약정은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
+  $('discnote').textContent = disc
+    ? `인터넷 1회선당 ${won(NET_DISC)}원(VAT 별도) 할인이 적용되어 공급가액에서 월 ${won(d.discTotal)}원(인터넷 ${d.internet}회선)이 차감되었습니다.`
+    : `인터넷 회선당 할인은 적용되지 않았습니다.`;
+}
+
+(function init(){
+  $('inNet').innerHTML = Object.entries(NET).map(([k,o])=>`<option value="${k}">${o.name}</option>`).join('');
+  $('inNet').value = 'slim';
+  fillTv();
+  $('inDisc').checked = TYPES[$('inType').value].discDefault;
+  const t = new Date();
+  $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
+  $('inType').addEventListener('change', () => { fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; render(); });
+  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
+  render();
+})();
+</script>
+
+</body>
+</html>
