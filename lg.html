@@ -106,6 +106,9 @@
   .panel button.ghost{background:var(--page);color:var(--ink);border:2px solid var(--line)}
   .panel button:disabled{opacity:.6;cursor:wait}
   .panel button:focus-visible{outline:3px solid var(--red-line);outline-offset:2px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:14px;line-height:1.5;max-width:min(92vw,560px);box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center}
+  .toast b{color:#ffd166}
+  @media print{.toast{display:none}}
   @media (max-width:720px){
     .page{padding:32px 20px}
     h1{font-size:30px}
@@ -362,7 +365,7 @@ function buildPdfStyles(){
       }
     }
   }
-  css += `.pdfmode{display:none;width:718px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
+  css += `.pdfmode{display:none;width:640px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
 .pdfmode .page{max-width:none}
 .pdfmode .calc .sum dt.g{color:var(--ink);font-weight:700}
 .pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
@@ -381,23 +384,33 @@ async function renderQuoteCanvas(){
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     return await html2canvas(wrap, {
-      scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, width: 718, windowWidth: 1100,
+      scale: 1.6, backgroundColor: "#ffffff", useCORS: true, logging: false, width: 640, windowWidth: 1100,
       onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; }
     });
   } finally { wrap.remove(); }
 }
+function toast(html, ms){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms || 7000);
+}
 async function shareOrDownload(blob, name){
-  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const ua = navigator.userAgent, mobile = /Android|iPhone|iPad|iPod/i.test(ua), ios = /iPhone|iPad|iPod/i.test(ua);
   if (mobile && navigator.canShare && typeof File !== 'undefined'){
     const file = new File([blob], name, { type: blob.type });
     if (navigator.canShare({ files: [file] })){
-      try { await navigator.share({ files: [file], title: name }); return; }
-      catch(e){ if (e && e.name === 'AbortError') return; }
+      try {
+        await navigator.share({ files: [file], title: name });
+        toast(`<b>${name}</b><br>공유창에서 고른 곳(파일 앱 · 사진 · 카카오톡 등)에 저장/전송되었습니다.`);
+        return;
+      } catch(e){ if (e && e.name === 'AbortError'){ toast('저장을 취소했습니다.', 3000); return; } }
     }
   }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const where = ios ? '파일 앱 → 나의 iPhone → 다운로드' : (mobile ? '내 파일 → Download 폴더' : '다운로드 폴더 (브라우저 오른쪽 위 다운로드 아이콘에서 열기)');
+  toast(`<b>${name}</b><br>저장 위치: ${where}`);
 }
 async function saveJpg(){
   const btn = document.getElementById('btnJpg'); const label = btn.textContent;
