@@ -98,13 +98,14 @@
     .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
     .meta{min-width:0;width:100%}
   }
-  @page{size:A4 portrait;margin:8mm 10mm}
+  @page{size:A4 portrait;margin:12mm 10mm}
   @media print{
-    html,body{width:auto;height:auto}
+    /* 문서 높이를 A4 1장(인쇄 영역 273mm)보다 작게 고정 → 2페이지 생성 불가 */
+    html,body{width:auto;height:262mm;max-height:262mm;overflow:hidden}
     :root{--bg:#fff;--page:#fff}
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
     .panel{display:none}
-    .page{max-width:none;padding:0;gap:10px;zoom:.88}
+    .page{max-width:none;padding:0;gap:10px;zoom:.8}
     .brand .kt{font-size:24px}
     .brand .sub{font-size:11px}
     h1{font-size:22px}
@@ -138,7 +139,7 @@
     .notice .note{font-size:10.5px}
     footer{margin-top:0;padding-top:6px;font-size:10px}
     footer b{font-size:12.5px}
-    .section,.total,.calc,.notice,tr{break-inside:avoid}
+    *{break-before:avoid;break-after:avoid;break-inside:avoid}
   }
 </style>
 </head>
