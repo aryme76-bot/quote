@@ -450,11 +450,11 @@ function buildPdfStyles(){
 .pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
-const PHONE_W = 430;   // 휴대폰용 이미지 폭(CSS px) → 2배 렌더 = 860px
+const PHONE_W = 440;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
 async function renderQuoteCanvas(mode){
-  if (mode === 'phone') return renderPhoneCanvas();
+  const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
   buildPdfStyles();
-  const wrap = document.createElement('div'); wrap.className = 'pdfmode';
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode'; wrap.style.width = W + 'px';
   const clone = document.querySelector('main.page').cloneNode(true);
   clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
     const g = el.classList.contains('grand');
@@ -465,8 +465,8 @@ async function renderQuoteCanvas(mode){
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     return await html2canvas(wrap, {
-      scale: 1.6, backgroundColor: "#ffffff", useCORS: true, logging: false, width: 640, windowWidth: 1100,
-      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; }
+      scale: SCALE, backgroundColor: "#ffffff", useCORS: true, logging: false, width: W, windowWidth: 1100,
+      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; w.style.width = W + 'px'; }
     });
   } finally { wrap.remove(); }
 }

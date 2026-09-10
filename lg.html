@@ -172,7 +172,7 @@
     .calc .sum .grand dd{font-size:20px}
     .inst-total{flex-direction:column;gap:6px;align-items:flex-end;font-size:13px}
     .inst-total b{font-size:16px}
-    .cmp{grid-template-columns:1fr;gap:8px}
+    .cmp{grid-template-columns:1fr !important;gap:8px}
     .cmp .tile{padding:12px 14px}
     .cmp .tile .v{font-size:18px}
     .notice{padding:14px 16px;gap:8px;font-size:13px}
@@ -331,21 +331,21 @@
 <script>
 // ── LG U+ 멀티라인 요금표 (단위: 원/월, VAT 별도) · 약정 {3년, 5년} ──
 const NET = {
-  gwang:  { name:'멀티라인 (광랜)',     price:{3:25000,5:20000} },
-  slim:   { name:'멀티라인 (기가슬림)', price:{3:30000,5:25000} },
-  giga:   { name:'멀티라인 (기가)',     price:{3:35000,5:30000} },
+  gwang:  { name:'멀티라인 (광랜)',     price:{3:25000,4:22000,5:20000} },
+  slim:   { name:'멀티라인 (기가슬림)', price:{3:30000,4:27000,5:25000} },
+  giga:   { name:'멀티라인 (기가)',     price:{3:35000,4:32000,5:30000} },
 };
 const TV = {
-  normal:  { name:'일반형',   main:{3:9900, 5:8000},  add:{3:5950,5:5000} },
-  basic:   { name:'베이직',   main:{3:11000,5:9000},  add:{3:6500,5:5500} },
-  silsok:  { name:'실속형',   main:{3:12000,5:10000}, add:{3:7000,5:6000} },
-  gibon:   { name:'기본형',   main:{3:13000,5:11000}, add:{3:7500,5:6500} },
-  premium: { name:'프리미엄', main:{3:15000,5:13000}, add:{3:8500,5:7500} },
+  normal:  { name:'일반형',   main:{3:9900, 4:9000, 5:8000},  add:{3:5950,4:5500,5:5000} },
+  basic:   { name:'베이직',   main:{3:11000,4:10000,5:9000},  add:{3:6500,4:6000,5:5500} },
+  silsok:  { name:'실속형',   main:{3:12000,4:11000,5:10000}, add:{3:7000,4:6500,5:6000} },
+  gibon:   { name:'기본형',   main:{3:13000,4:12000,5:11000}, add:{3:7500,4:7000,5:6500} },
+  premium: { name:'프리미엄', main:{3:15000,4:14000,5:13000}, add:{3:8500,4:8000,5:7500} },
 };
-// 구분별 선택 가능 상품과 셋탑 임대료
+// 구분별 선택 가능 상품·약정과 셋탑 임대료
 const TYPES = {
-  new: { name:'신규',   tv:['silsok','gibon','premium'],                    settop: k => 2000, discDefault:false },
-  re:  { name:'재약정', tv:['normal','basic','silsok','gibon','premium'],   settop: k => (['silsok','gibon','premium'].includes(k) ? 1000 : 0), discDefault:true },   // 일반형·베이직은 셋탑 임대료 없음
+  new: { name:'신규',   tv:['silsok','gibon','premium'],                  terms:[3,4,5], settop: k => 2000, discDefault:false },
+  re:  { name:'재약정', tv:['normal','basic','silsok','gibon','premium'], terms:[3,5],   settop: k => (['silsok','gibon','premium'].includes(k) ? 1000 : 0), discDefault:true },   // 일반형·베이직은 셋탑 임대료 없음
 };
 const NET_DISC = 6000;      // 인터넷 1회선당 할인 (VAT 별도)
 const WIFI = 0;             // Wi-Fi 무료
@@ -372,6 +372,11 @@ function compute(rooms, term, typeKey, netKey, tvKey, disc){
 }
 
 const $ = id => document.getElementById(id);
+function fillTerm(){
+  const typeKey = $('inType').value, cur = $('inTerm').value;
+  $('inTerm').innerHTML = TYPES[typeKey].terms.map(t=>`<option value="${t}">${t}년</option>`).join('');
+  $('inTerm').value = TYPES[typeKey].terms.includes(+cur) ? cur : String(TYPES[typeKey].terms[0]);
+}
 function fillTv(){
   const typeKey = $('inType').value, cur = $('inTv').value;
   $('inTv').innerHTML = TYPES[typeKey].tv.map(k=>`<option value="${k}">${TV[k].name}</option>`).join('');
@@ -395,7 +400,8 @@ function render(){
     const unit = l.unit === 0 ? (l.svc === '셋탑박스' ? '없음' : '무료') : won(l.unit);
     return `<li class="${l.hl ? 'sub' : ''}"><div class="l"><b>${l.svc}</b><span>${sub}</span></div><div class="r"><b class="${l.hl ? 'hl' : ''}">${l.unit === 0 ? '0' : won(l.total)}</b><span>${l.qty} × ${unit}</span></div></li>`;
   }).join('');
-  $('cmp').innerHTML = [3,5].map(t => {
+  $('cmp').style.gridTemplateColumns = `repeat(${TYPES[typeKey].terms.length},1fr)`;
+  $('cmp').innerHTML = TYPES[typeKey].terms.map(t => {
     const c = compute(rooms, t, typeKey, netKey, tvKey, disc);
     return `<div class="tile${t===term?' on':''}"><div class="t">${t}년 약정</div><div class="v">${won(c.total)}원</div><div class="s">공급가액 ${won(c.supply)}원 · 객실당 ${won(Math.round(c.supply/rooms))}원</div></div>`;
   }).join('');
@@ -430,12 +436,12 @@ function openInChrome(){
 (function init(){
   $('inNet').innerHTML = Object.entries(NET).map(([k,o])=>`<option value="${k}">${o.name}</option>`).join('');
   $('inNet').value = 'slim';
-  fillTv();
+  fillTerm(); fillTv();
   $('inDisc').checked = TYPES[$('inType').value].discDefault;
   const t = new Date();
-  const restored = restoreState(); if (restored){ fillTv(); const q = new URLSearchParams(location.search); if (q.has('tv')) $('inTv').value = q.get('tv'); if (q.has('disc')) $('inDisc').checked = q.get('disc') === '1'; }
+  const restored = restoreState(); if (restored){ fillTerm(); fillTv(); const q = new URLSearchParams(location.search); if (q.has('term')) $('inTerm').value = q.get('term'); if (q.has('tv')) $('inTv').value = q.get('tv'); if (q.has('disc')) $('inDisc').checked = q.get('disc') === '1'; }
   if (!restored) $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
-  $('inType').addEventListener('change', () => { fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; render(); });
+  $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; render(); });
   ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
   render();
   try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
@@ -477,11 +483,11 @@ function buildPdfStyles(){
 .pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
-const PHONE_W = 430;   // 휴대폰용 이미지 폭(CSS px) → 2배 렌더 = 860px
+const PHONE_W = 425;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
 async function renderQuoteCanvas(mode){
-  if (mode === 'phone') return renderPhoneCanvas();
+  const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
   buildPdfStyles();
-  const wrap = document.createElement('div'); wrap.className = 'pdfmode';
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode'; wrap.style.width = W + 'px';
   const clone = document.querySelector('main.page').cloneNode(true);
   clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
     const g = el.classList.contains('grand');
@@ -492,8 +498,8 @@ async function renderQuoteCanvas(mode){
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     return await html2canvas(wrap, {
-      scale: 1.6, backgroundColor: "#ffffff", useCORS: true, logging: false, width: 640, windowWidth: 1100,
-      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; }
+      scale: SCALE, backgroundColor: "#ffffff", useCORS: true, logging: false, width: W, windowWidth: 1100,
+      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; w.style.width = W + 'px'; }
     });
   } finally { wrap.remove(); }
 }
