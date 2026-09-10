@@ -96,6 +96,58 @@
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:14px;line-height:1.5;max-width:min(92vw,560px);box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center}
   .toast b{color:#ffd166}
   @media print{.toast{display:none}}
+  /* ── 모바일 전용 카드 목록 (PC/인쇄/저장에서는 숨김) ── */
+  .mlist{display:none;list-style:none;margin:0;padding:0;flex-direction:column;gap:8px}
+  .mlist li{background:var(--page);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .mlist li.sub{background:var(--panel)}
+  .mlist .l{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mlist .l b{font-size:14px;font-weight:700}
+  .mlist .l span{font-size:12px;color:var(--muted)}
+  .mlist .r{text-align:right;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+  .mlist .r b{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .mlist .r b.hl{color:var(--red)}
+  .mlist .r span{font-size:12px;color:var(--muted)}
+  @media screen and (max-width:720px){
+    .panel{padding:10px 14px;gap:8px 10px}
+    .panel label{flex:1 1 44%;flex-direction:column;align-items:stretch;gap:3px;font-size:12px}
+    .panel label.rooms{flex-basis:100%}
+    .panel label.rooms input{font-size:24px;text-align:center;padding:8px}
+    .panel label.chk{flex-direction:row;align-items:center;flex-basis:100%;font-size:13px}
+    .panel input,.panel select{width:100%;font-size:15px}
+    .panel input.date,.panel input.to{width:100%}
+    .panel .auto{flex-basis:100%;font-size:12px;line-height:1.4}
+    .panel .btns{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .panel button{padding:10px 6px;font-size:14px}
+    .page{padding:18px 14px 24px;gap:18px}
+    .brand .kt,.brand .lg{font-size:26px}
+    .brand .sub{font-size:10px}
+    h1{font-size:24px}
+    .header{gap:12px}
+    .header .lead{font-size:13px;margin-top:4px}
+    .meta{padding:12px 14px;row-gap:6px;font-size:13px;column-gap:16px}
+    .total{padding:16px 18px;gap:14px}
+    .total .big{padding-bottom:12px}
+    .total .big .amount{font-size:34px}
+    .total .side{font-size:13px;row-gap:6px}
+    .total .side dd{font-size:15px}
+    h2{font-size:17px}
+    .sec-head small{display:none}
+    .section{gap:10px}
+    .table-wrap{display:none}
+    .mlist{display:flex}
+    .calc{padding:14px 16px;gap:0}
+    .calc .formula{display:none}
+    .calc .sum{border-left:0;padding-left:0;font-size:14px;row-gap:6px}
+    .calc .sum .grand dd{font-size:20px}
+    .inst-total{flex-direction:column;gap:6px;align-items:flex-end;font-size:13px}
+    .inst-total b{font-size:16px}
+    .cmp{grid-template-columns:1fr;gap:8px}
+    .cmp .tile{padding:12px 14px}
+    .cmp .tile .v{font-size:18px}
+    .notice{padding:14px 16px;gap:8px;font-size:13px}
+    .notice li{padding-left:16px}
+    footer{font-size:12px;margin-top:4px}
+  }
   @media (max-width:720px){
     .page{padding:32px 20px}
     h1{font-size:30px}
@@ -151,11 +203,11 @@
 </head>
 <body>
 <form class="panel" onsubmit="return false">
-  <label>회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
+  <label class="rooms">회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 기본TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
-  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button></div>
+  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button><button type="button" id="btnShare" class="ghost" onclick="shareJpg()" hidden>공유 (카톡)</button></div>
 </form>
 <main class="page">
   <div class="brand">
@@ -196,6 +248,7 @@
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <ul class="mlist" id="mrows"></ul>
 
     <div class="calc">
       <div class="formula">
@@ -222,6 +275,7 @@
         <tbody id="inst"></tbody>
       </table>
     </div>
+    <ul class="mlist" id="minst"></ul>
     <div class="inst-total">
       <div><span>평일 총 설치비</span><b><span data-v="installWd"></span>원</b></div>
       <div><span>주말·공휴일 총 설치비</span><b><span data-v="installWe"></span>원</b></div>
@@ -292,6 +346,17 @@ function render(){
     row('','모뎀 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
     row('Wi-Fi 단말기','기기 임대료','-','3년',d.wifi,P.wifi.base,d.parts[5],true),
   ].join('');
+  const mi = (svc, sub, qty, unit, total, hl, cls) => `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total)}</b><span>${qty} × ${won(unit)}</span></div></li>`;
+  document.getElementById('mrows').innerHTML = [
+    mi('인터넷 베이직','기본료 · 500M · 3년',d.internet,P.internet.base,d.parts[0]),
+    mi('지니TV Biz 기본','기본료 · 라이트 · 3년',d.tvBasic,P.tvBasic.base,d.parts[1]),
+    mi('└ 모뎀 임대료','올인원2',d.tvBasic,P.tvBasic.rental,d.parts[2],false,'sub'),
+    mi('지니TV Biz 추가','기본료 · 라이트 · 3년',d.tvAdd,P.tvAdd.base,d.parts[3]),
+    mi('└ 모뎀 임대료','올인원2',d.tvAdd,P.tvAdd.rental,d.parts[4],false,'sub'),
+    mi('Wi-Fi 단말기','기기 임대료 · 3년',d.wifi,P.wifi.base,d.parts[5],true),
+  ].join('');
+  document.getElementById('minst').innerHTML = d.inst.map(i =>
+    `<li><div class="l"><b>${i.name}</b><span>수량 ${i.qty}</span></div><div class="r"><b>${won(i.wdT)}</b><span>평일 ${won(i.wd)} · 주말 ${won(i.we)} → ${won(i.weT)}</span></div></li>`).join('');
   document.getElementById('inst').innerHTML = d.inst.map(i =>
     `<tr><td class="svc">${i.name}</td><td>${i.qty}</td><td class="num">${won(i.wd)}</td><td class="num">${won(i.we)}</td><td class="num">${won(i.wdT)}</td><td class="num">${won(i.weT)}</td></tr>`).join('');
   document.getElementById('disc').innerHTML = d.discount
@@ -307,6 +372,7 @@ function pdfName(){ const r = document.getElementById('inRooms').value; const d 
   document.getElementById('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
   ['inRooms','inDate','inTo'].forEach(id => document.getElementById(id).addEventListener('input', render));
   render();
+  try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
 })();
 </script>
 
@@ -360,23 +426,31 @@ function toast(html, ms){
   const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; document.body.appendChild(t);
   setTimeout(() => t.remove(), ms || 7000);
 }
+function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 async function shareOrDownload(blob, name){
-  const ua = navigator.userAgent, mobile = /Android|iPhone|iPad|iPod/i.test(ua), ios = /iPhone|iPad|iPod/i.test(ua);
-  if (mobile && navigator.canShare && typeof File !== 'undefined'){
-    const file = new File([blob], name, { type: blob.type });
-    if (navigator.canShare({ files: [file] })){
-      try {
-        await navigator.share({ files: [file], title: name });
-        toast(`<b>${name}</b><br>공유창에서 고른 곳(파일 앱 · 사진 · 카카오톡 등)에 저장/전송되었습니다.`);
-        return;
-      } catch(e){ if (e && e.name === 'AbortError'){ toast('저장을 취소했습니다.', 3000); return; } }
-    }
-  }
+  // 저장 버튼: 항상 바로 다운로드 (안드로이드: 내 파일 → Download, 아이폰: 파일 앱 → 다운로드, PC: 다운로드 폴더)
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-  const where = ios ? '파일 앱 → 나의 iPhone → 다운로드' : (mobile ? '내 파일 → Download 폴더' : '다운로드 폴더 (브라우저 오른쪽 위 다운로드 아이콘에서 열기)');
+  const a = document.createElement('a'); a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 20000);
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const where = ios ? '파일 앱 → 나의 iPhone → 다운로드 (사파리 오른쪽 위 ↓ 아이콘)' : (isMobile() ? '내 파일 → 다운로드(Download) 폴더' : '다운로드 폴더 (브라우저 오른쪽 위 ↓ 아이콘)');
   toast(`<b>${name}</b><br>저장 위치: ${where}`);
+}
+async function shareBlob(blob, name){
+  const file = new File([blob], name, { type: blob.type });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { await shareOrDownload(blob, name); return; }
+  try { await navigator.share({ files: [file], title: name }); toast(`<b>${name}</b><br>선택한 앱으로 보냈습니다.`, 4000); }
+  catch(e){ if (!(e && e.name === 'AbortError')) await shareOrDownload(blob, name); }
+}
+async function shareJpg(){
+  const btn = document.getElementById('btnShare'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = '준비 중…';
+  try {
+    const canvas = await renderQuoteCanvas();
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    await shareBlob(blob, pdfName().replace(/\.pdf$/, '.jpg'));
+  } catch(e) { alert('공유하지 못했습니다. (' + (e && e.message || e) + ')'); }
+  finally { btn.disabled = false; btn.textContent = label; }
 }
 async function saveJpg(){
   const btn = document.getElementById('btnJpg'); const label = btn.textContent;
