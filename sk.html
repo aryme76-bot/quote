@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SK 브로드밴드 자동 견적서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#ffffff; --page:#ffffff; --ink:#1b1b1f; --muted:#6f7076; --faint:#9a9ba1;
+    --panel:#f3f3f5; --line:#e4e4e8; --head:#1b1b1f; --head-ink:#ffffff;
+    --red:#e8542a; --red-soft:#fff3ee; --red-line:#f5b79f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+      --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+      --red:#ff8a5c; --red-soft:#2b1a14; --red-line:#6b3a2a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141416; --page:#1c1c20; --ink:#f1f1f3; --muted:#a6a7ae; --faint:#7c7d85;
+    --panel:#26262b; --line:#34343a; --head:#0e0e10; --head-ink:#f1f1f3;
+    --red:#ff8a5c; --red-soft:#2b1a14; --red-line:#6b3a2a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5}
+  .page{max-width:900px;margin:0 auto;background:var(--page);padding:56px 56px 40px;display:flex;flex-direction:column;gap:36px}
+  .brand{display:flex;align-items:flex-start;gap:14px}
+  .brand .kt{font-size:38px;font-weight:900;color:var(--red);letter-spacing:-1px;line-height:1}
+  .brand .sub{font-size:12px;letter-spacing:.08em;color:var(--muted);line-height:1.35;padding-top:5px}
+  .brand .sub b{display:block;color:var(--ink);font-weight:700}
+  .header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  h1{margin:0;font-size:40px;font-weight:900;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+  .header .lead{font-size:15px;color:var(--muted);margin-top:8px}
+  .meta{background:var(--panel);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto auto;column-gap:56px;row-gap:10px;font-size:14px;min-width:300px}
+  .meta dt{color:var(--muted);margin:0}
+  .meta dd{margin:0;text-align:right;font-weight:500}
+  .total{border:2px solid var(--red);background:var(--red-soft);border-radius:16px;padding:26px 32px;display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+  .total .big{border-right:1px solid var(--red-line);padding-right:28px}
+  .total .big .label{font-size:15px;color:var(--ink);margin-bottom:6px}
+  .total .big .amount{font-size:48px;font-weight:900;color:var(--red);letter-spacing:-.02em;line-height:1.1}
+  .total .big .unit{font-size:18px;font-weight:700;color:var(--red);margin-left:8px}
+  .total .big .vat{font-size:13px;color:var(--muted);margin-left:8px}
+  .total .side{display:grid;grid-template-columns:auto auto;align-content:center;row-gap:14px;column-gap:24px;font-size:15px}
+  .total .side dt{color:var(--muted);margin:0}
+  .total .side dd{margin:0;text-align:right;font-size:18px;font-weight:500}
+  h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sec-head{display:flex;justify-content:space-between;align-items:baseline}
+  .sec-head small{font-size:12px;color:var(--faint)}
+  .section{display:flex;flex-direction:column;gap:14px}
+  .table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+  thead th{background:var(--head);color:var(--head-ink);font-weight:700;padding:15px 12px;text-align:center;white-space:nowrap}
+  thead th:first-child{border-top-left-radius:13px}
+  thead th:last-child{border-top-right-radius:13px}
+  tbody td{padding:16px 12px;text-align:center;border-top:1px solid var(--line)}
+  tbody tr:nth-child(even){background:var(--panel)}
+  tbody td.num{text-align:right;padding-right:28px}
+  tbody td.svc{font-weight:500}
+  tbody td.hl{color:var(--red);font-weight:500}
+  .calc{background:var(--panel);border-radius:14px;padding:22px 28px;display:grid;grid-template-columns:1.2fr 1fr;gap:28px}
+  .calc .formula .label{font-size:14px;color:var(--muted);margin-bottom:10px}
+  .calc .formula .expr{font-size:14px;line-height:1.7}
+  .calc .formula .result{font-size:16px;color:var(--red);font-weight:500;margin-top:6px}
+  .calc .sum{border-left:1px solid var(--line);padding-left:28px;display:grid;grid-template-columns:auto auto;align-content:center;row-gap:10px;column-gap:20px;font-size:15px}
+  .calc .sum dt{margin:0;color:var(--muted)}
+  .calc .sum dd{margin:0;text-align:right;font-weight:500}
+  .calc .sum .grand dt{color:var(--ink);font-weight:700}
+  .calc .sum .grand dd{color:var(--red);font-weight:900;font-size:22px}
+  .notice{border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14px}
+  .notice li{position:relative;padding-left:20px}
+  .notice li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .notice .note{color:var(--muted);font-size:13px}
+  footer{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px}
+  footer b{font-size:15px;font-weight:700}
+  footer span{color:var(--muted)}
+  .inst-total{display:flex;gap:28px;justify-content:flex-end;font-size:15px;padding:4px 8px 0}
+  .inst-total span{color:var(--muted)}
+  .inst-total b{color:var(--red);font-weight:900;font-size:18px;margin-left:8px}
+  .calc .sum dd.hl{color:var(--red)}
+  .panel{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;font-size:14px}
+  .panel select{font:inherit;font-weight:700;font-size:14px;padding:7px 10px;border:2px solid var(--line);border-radius:8px;background:var(--page);color:var(--ink)}
+  .panel select:focus{outline:3px solid var(--red-line);outline-offset:1px}
+  .brand .sk{font-size:30px;font-weight:900;color:var(--red);letter-spacing:-.5px;line-height:1}
+  .brand .sk small{font-size:13px;font-weight:700;margin-left:6px;letter-spacing:0}
+  .brand .lg small{font-size:16px;font-weight:700;margin-left:2px}
+  .cmp{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .cmp .tile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+  .cmp .tile.on{border-color:var(--red);background:var(--red-soft)}
+  .cmp .tile .t{font-size:13px;color:var(--muted)}
+  .cmp .tile .v{font-size:20px;font-weight:900;color:var(--ink)}
+  .cmp .tile.on .v{color:var(--red)}
+  .cmp .tile .s{font-size:12px;color:var(--muted)}
+  .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  .panel input.to{width:190px}
+  .panel label.chk{color:var(--ink);font-weight:500}
+  .panel input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--red)}
+  .panel input.date{width:130px;font-size:14px;font-weight:500;border-color:var(--line);text-align:left}
+  .panel input:focus{outline:3px solid var(--red-line);outline-offset:1px}
+  .panel .auto{color:var(--muted)}
+  .panel .auto b{color:var(--ink);font-weight:700}
+  .panel .btns{margin-left:auto;display:flex;gap:8px}
+  .panel button{font:inherit;font-weight:700;padding:8px 16px;border:0;border-radius:8px;background:var(--red);color:#fff;cursor:pointer;white-space:nowrap}
+  .panel button.ghost{background:var(--page);color:var(--ink);border:2px solid var(--line)}
+  .panel button:disabled{opacity:.6;cursor:wait}
+  .panel button:focus-visible{outline:3px solid var(--red-line);outline-offset:2px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:14px;line-height:1.5;max-width:min(92vw,560px);box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center}
+  .toast b{color:#ffd166}
+  @media print{.toast{display:none}}
+  .sheet{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+  .sheet .box{background:var(--page);color:var(--ink);width:100%;max-width:560px;max-height:92vh;border-radius:18px 18px 0 0;padding:16px 16px 20px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+  .sheet h3{margin:0;font-size:16px;font-weight:700}
+  .sheet .name{font-size:12px;color:var(--muted);word-break:break-all}
+  .sheet .prev{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .sheet .prev img{display:block;width:100%;height:auto}
+  .sheet .hint{font-size:13px;background:var(--panel);border-radius:10px;padding:10px 12px;line-height:1.5}
+  .sheet .hint b{color:var(--red)}
+  .sheet .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sheet .acts a,.sheet .acts button{font:inherit;font-weight:700;font-size:14px;padding:11px 8px;border-radius:10px;border:2px solid var(--line);background:var(--page);color:var(--ink);text-align:center;text-decoration:none;cursor:pointer}
+  .sheet .acts .pri{background:var(--red);border-color:var(--red);color:#fff}
+  .sheet .close{align-self:center;font:inherit;background:none;border:0;color:var(--muted);padding:6px 12px;cursor:pointer}
+  @media print{.sheet{display:none}}
+  .inapp{display:none;background:#fff4d6;color:#4a3a00;border-bottom:1px solid #f0d78a;padding:10px 14px;font-size:13px;line-height:1.5;align-items:center;gap:10px;flex-wrap:wrap}
+  .inapp.on{display:flex}
+  .inapp b{color:#b45309}
+  .inapp a{margin-left:auto;font-weight:700;background:#b45309;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;white-space:nowrap}
+  @media print{.inapp{display:none !important}}
+  /* ── 모바일 전용 카드 목록 (PC/인쇄/저장에서는 숨김) ── */
+  .mlist{display:none;list-style:none;margin:0;padding:0;flex-direction:column;gap:8px}
+  .mlist li{background:var(--page);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .mlist li.sub{background:var(--panel)}
+  .mlist .l{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mlist .l b{font-size:14px;font-weight:700}
+  .mlist .l span{font-size:12px;color:var(--muted)}
+  .mlist .r{text-align:right;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+  .mlist .r b{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .mlist .r b.hl{color:var(--red)}
+  .mlist .r span{font-size:12px;color:var(--muted)}
+  @media screen and (max-width:720px){
+    .panel{padding:10px 14px;gap:8px 10px}
+    .panel label{flex:1 1 44%;flex-direction:column;align-items:stretch;gap:3px;font-size:12px}
+    .panel label.rooms{flex-basis:100%}
+    .panel label.rooms input{font-size:24px;text-align:center;padding:8px}
+    .panel label.chk{flex-direction:row;align-items:center;flex-basis:100%;font-size:13px}
+    .panel input,.panel select{width:100%;font-size:15px}
+    .panel input.date,.panel input.to{width:100%}
+    .panel .auto{flex-basis:100%;font-size:12px;line-height:1.4}
+    .panel .btns{margin-left:0;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .panel button{padding:10px 6px;font-size:14px}
+    .page{padding:18px 14px 24px;gap:18px}
+    .brand .kt,.brand .lg{font-size:26px}
+    .brand .sub{font-size:10px}
+    h1{font-size:24px}
+    .header{gap:12px}
+    .header .lead{font-size:13px;margin-top:4px}
+    .meta{padding:12px 14px;row-gap:6px;font-size:13px;column-gap:16px}
+    .total{padding:16px 18px;gap:14px}
+    .total .big{padding-bottom:12px}
+    .total .big .amount{font-size:34px}
+    .total .side{font-size:13px;row-gap:6px}
+    .total .side dd{font-size:15px}
+    h2{font-size:17px}
+    .sec-head small{display:none}
+    .section{gap:10px}
+    .table-wrap{display:none}
+    .mlist{display:flex}
+    .calc{padding:14px 16px;gap:0}
+    .calc .formula{display:none}
+    .calc .sum{border-left:0;padding-left:0;font-size:14px;row-gap:6px}
+    .calc .sum .grand dd{font-size:20px}
+    .inst-total{flex-direction:column;gap:6px;align-items:flex-end;font-size:13px}
+    .inst-total b{font-size:16px}
+    .cmp{grid-template-columns:1fr !important;gap:8px}
+    .cmp .tile{padding:12px 14px}
+    .cmp .tile .v{font-size:18px}
+    .notice{padding:14px 16px;gap:8px;font-size:13px}
+    .notice li{padding-left:16px}
+    footer{font-size:12px;margin-top:4px}
+  }
+  @media (max-width:720px){
+    .page{padding:32px 20px}
+    h1{font-size:30px}
+    .total,.calc{grid-template-columns:1fr}
+    .total .big{border-right:0;border-bottom:1px solid var(--red-line);padding-right:0;padding-bottom:20px}
+    .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+    .meta{min-width:0;width:100%}
+  }
+  @page{size:A4 portrait;margin:12mm 10mm}
+  @media print{
+    /* 문서 높이를 A4 1장(인쇄 영역 273mm)보다 작게 고정 → 2페이지 생성 불가 */
+    html,body{width:auto;height:262mm;max-height:262mm;overflow:hidden}
+    :root{--bg:#fff;--page:#fff}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
+    .panel{display:none}
+    .page{max-width:none;padding:0;gap:10px;zoom:.8}
+    .brand .kt{font-size:24px}
+    .brand .sub{font-size:11px}
+    h1{font-size:22px}
+    .header .lead{font-size:12px;margin-top:3px}
+    .meta{padding:7px 12px;row-gap:3px;font-size:10.5px;border-radius:8px;column-gap:36px}
+    .total{padding:9px 18px;gap:14px;border-radius:10px}
+    .total .big .label{font-size:13px;margin-bottom:2px}
+    .total .big .amount{font-size:28px}
+    .total .big .unit{font-size:15px}
+    .total .big .vat{font-size:11px}
+    .total .side{font-size:11px;row-gap:3px}
+    .total .side dd{font-size:12.5px}
+    h2{font-size:14.5px}
+    .section{gap:6px}
+    .table-wrap{border-radius:10px}
+    table{font-size:10.5px;min-width:0}
+    thead th{padding:6px 8px}
+    thead th:first-child{border-top-left-radius:9px}
+    thead th:last-child{border-top-right-radius:9px}
+    tbody td{padding:5px 8px}
+    tbody td.num{padding-right:18px}
+    .calc{padding:8px 16px;gap:16px;border-radius:8px}
+    .calc .formula .label,.calc .formula .expr{font-size:10.5px}
+    .calc .formula .label{margin-bottom:3px}
+    .calc .formula .result{font-size:13px}
+    .calc .sum{font-size:11px;row-gap:2px}
+    .calc .sum .grand dd{font-size:15px}
+    .inst-total{font-size:11px;padding:0 6px}
+    .inst-total b{font-size:13px}
+    .cmp{gap:8px}
+    .cmp .tile{padding:7px 12px;border-radius:8px;gap:2px}
+    .cmp .tile .v{font-size:14px}
+    .cmp .tile .t,.cmp .tile .s{font-size:10.5px}
+    .notice{padding:8px 14px;gap:3px;font-size:10.5px;border-radius:8px}
+    .notice .note{font-size:10.5px}
+    footer{margin-top:0;padding-top:6px;font-size:10px}
+    footer b{font-size:12.5px}
+    *{break-before:avoid;break-after:avoid;break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="inapp" id="inapp"></div>
+<form class="panel" onsubmit="return false">
+  <label class="rooms">회선수(객실) <input id="inRooms" type="number" min="1" max="999" value="30" inputmode="numeric" aria-label="회선수"></label>
+  <label>인터넷 <select id="inNet" aria-label="인터넷 상품"></select></label>
+  <label>IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
+  <label>셋탑박스 <select id="inStb" aria-label="셋탑박스"></select></label>
+  <label>Wi-Fi <select id="inWifi" aria-label="Wi-Fi"></select></label>
+  <label>성인방송 <select id="inAdult" aria-label="성인방송"></select></label>
+  <label>요금할인(선납권) <select id="inPre" aria-label="요금할인"></select></label>
+  <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
+  <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
+  <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · IPTV 첫 회선 1 · 추가 <b data-v="tvAdd"></b> · 셋탑 <b data-v="rooms"></b> · Wi-Fi <b data-v="rooms"></b></span>
+  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button><button type="button" id="btnShare" class="ghost" onclick="shareJpg()" hidden>공유 (카톡)</button></div>
+</form>
+
+<main class="page">
+  <div class="brand">
+    <div class="sk">SK<small>broadband</small></div>
+    <div class="sub"><b>BUSINESS</b>B tv · 비즈원</div>
+  </div>
+
+  <header class="header">
+    <div>
+      <h1>SK 브로드밴드 견적서</h1>
+      <div class="lead">인터넷 + IPTV + Wi-Fi · <span data-v="rooms"></span>객실 기준</div>
+    </div>
+    <dl class="meta">
+      <dt>견적일자</dt><dd><span data-v="date"></span></dd>
+      <dt>수신</dt><dd><span data-v="to"></span></dd>
+      <dt>견적기준</dt><dd>3년 약정 · 결합할인 · <span data-v="netName"></span></dd>
+    </dl>
+  </header>
+
+  <section class="total" aria-label="월 납부 예상금액">
+    <div class="big">
+      <div class="label">월 납부 예상금액</div>
+      <div><span class="amount" data-v="total"></span><span class="unit">원</span><span class="vat">(VAT 포함)</span></div>
+    </div>
+    <dl class="side">
+      <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+      <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+      <dt>객실당(VAT 포함)</dt><dd><span data-v="perRoom"></span>원</dd>
+    </dl>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>상품 구성</h2><small>단위: 원 / 월 · VAT 별도 · 3년 약정</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>공급상품</th><th>단가 기준</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가합계</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <ul class="mlist" id="mrows"></ul>
+
+    <div class="calc">
+      <div class="formula">
+        <div class="label">월 공급가액 계산</div>
+        <div class="expr"><span data-v="formula"></span></div>
+        <div class="result">= <span data-v="supply"></span>원</div>
+      </div>
+      <dl class="sum">
+        <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
+        <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
+        <div class="grand" style="display:contents"><dt>월 합계</dt><dd><span data-v="total"></span>원</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><h2>1회성 비용 · 가입 혜택</h2><small>단위: 원 · VAT 포함</small></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>산정 기준</th><th>회선</th><th>금액</th></tr>
+        </thead>
+        <tbody id="inst"></tbody>
+      </table>
+    </div>
+    <ul class="mlist" id="minst"></ul>
+  </section>
+
+  <section class="section">
+    <h2>계약 및 설치 안내</h2>
+    <ul class="notice">
+      <li>3년 약정 · 결합할인 기준이며, 월요금 단가는 부가세 별도입니다. 약정 이내 해지 시 사은품 및 할인반환금이 청구됩니다.</li>
+      <li>객실 <span data-v="rooms"></span>실 기준으로 인터넷 <span data-v="internet"></span>회선(8객실당 1회선), IPTV 첫 1회선 + 추가 <span data-v="tvAdd"></span>회선(다셋탑 할인), 셋탑박스 <span data-v="rooms"></span>대, Wi-Fi <span data-v="rooms"></span>대로 구성되었습니다.</li>
+      <li>IPTV 설치비는 1회성으로 발생하며, 가입 지원금에서 공제 후 선납 처리할 수 있습니다. 선로공사 및 인터넷 설치비는 3년 약정 시 면제됩니다.</li>
+      <li>요금할인은 36개월 이후 자동 소멸(정상요금 부과)되며, 34개월 차 재약정 대상입니다. 세대별 1:1 방식 UP/DOWN 인터넷을 제공합니다.</li>
+      <li>신청서 접수일로부터 5~20일 이내 개통 완료됩니다. (광구축 일정에 따라 변동 가능)</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>본 견적은 상담 기준이며 최종 계약 및 개통 내역을 우선합니다. 유효기간: 견적일 해당 월 말일까지</span>
+  </footer>
+</main>
+
+<script>
+// ── SK 브로드밴드 요금테이블 (단위: 원/월, VAT 별도) · 엑셀 '요금테이블' 시트 ──
+// 인터넷: 결합할인(3년 약정) 단가
+const NET = {
+  standard: { name:'비즈광랜 Standard', price:25245 },
+  smartbiz: { name:'비즈광랜 Smart_Biz', price:32130 },
+  b100:     { name:'비즈원 100M', price:25000 },
+  b500:     { name:'비즈원 500M', price:30000 },
+  b1g:      { name:'비즈원 1G',   price:35000 },
+};
+// IPTV: first = 첫 1회선(결합할인), add = 2회선~(다셋탑할인)
+const TV = {
+  sel:   { name:'선택형(ch78)',            first:7000,  add:4000 },
+  eco:   { name:'이코노미형(ch183)',        first:9000,  add:5500 },
+  smart: { name:'뉴스마트형(ch190)',        first:11000, add:6500 },
+  smartS:{ name:'뉴스마트형(ch185) 숙박',   first:11000, add:6500 },
+  plus:  { name:'스마트플러스',             first:12000, add:7000 },
+  std:   { name:'스탠다드형(ch234)',        first:12000, add:7000 },
+  stdS:  { name:'스탠다드형(ch234) 숙박',   first:12000, add:7000 },
+  all:   { name:'All형(ch252)',             first:14000, add:8000 },
+  allS:  { name:'All형(ch243) 숙박',        first:14000, add:8000 },
+  catch: { name:'All+캐치온형(ch254)',      first:20000, add:11000 },
+  catchS:{ name:'All+캐치온(ch245) 숙박',   first:20000, add:11000 },
+};
+const STB   = { smart3:{ name:'smart3', price:1000 }, uhd:{ name:'UHD', price:0 } };
+const WIFI  = { giga:{ name:'Giga WiFi', price:0 }, giga500:{ name:'Giga WiFi (5백)', price:500 }, w100:{ name:'100M WiFi', price:0 } };
+const ADULT = { none:{ name:'없음', price:0 }, playboy:{ name:'플레이보이', price:1500 } };
+const PRE   = { 0:'없음', 1000:'-1,000원', 2000:'-2,000원', 3000:'-3,000원', 4000:'-4,000원', 5000:'-5,000원' };   // 객실당 요금할인(선납권)
+const ROOMS_PER_LINE = 8;
+const INSTALL_PER_ROOM = 17600, INSTALL_BASE = 4400;   // IPTV 설치비 (VAT 포함) = 객실수 × 17,600 + 4,400
+const BONUS_PER_ROOM = 176000;                         // 가입혜택 현금지급 (VAT 포함) = 객실수 × 176,000
+const won = n => n.toLocaleString('ko-KR');
+const $ = id => document.getElementById(id);
+
+function compute(rooms, netKey, tvKey, stbKey, wifiKey, adultKey, pre){
+  const internet = Math.ceil(rooms / ROOMS_PER_LINE);
+  const tvAdd = Math.max(rooms - 1, 0);
+  const net = NET[netKey], tv = TV[tvKey];
+  const lines = [
+    { svc:'인터넷',        prod: net.name,          basis:'결합할인',   qty: internet, unit: net.price },
+    { svc:'Wi-Fi',         prod: WIFI[wifiKey].name, basis:'할인',       qty: rooms,    unit: WIFI[wifiKey].price },
+    { svc:'IPTV (첫 1회선)', prod: tv.name,         basis:'결합할인',   qty: 1,        unit: tv.first },
+    { svc:'IPTV (2회선~)', prod: tv.name,           basis:'다셋탑할인', qty: tvAdd,    unit: tv.add },
+    { svc:'셋탑박스',      prod: STB[stbKey].name,  basis:'할인',       qty: rooms,    unit: STB[stbKey].price },
+  ];
+  if (adultKey !== 'none') lines.push({ svc:'성인방송', prod: ADULT[adultKey].name, basis:'할인', qty: rooms, unit: ADULT[adultKey].price });
+  if (pre > 0) lines.push({ svc:'요금할인', prod:'선납권 ' + PRE[pre], basis:'객실당', qty: rooms, unit: -pre, hl:true });
+  const out = lines.map(l => ({...l, total: l.qty * l.unit}));
+  const supply = out.reduce((a,l)=>a+l.total,0), vat = Math.round(supply*0.1), total = supply + vat;
+  const install = rooms * INSTALL_PER_ROOM + INSTALL_BASE, bonus = rooms * BONUS_PER_ROOM;
+  return { rooms, internet, tvAdd, lines: out, supply, vat, total, perRoom: Math.round(total / rooms), install, bonus };
+}
+
+function render(){
+  const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
+  const netKey = $('inNet').value, tvKey = $('inTv').value, stbKey = $('inStb').value, wifiKey = $('inWifi').value, adultKey = $('inAdult').value, pre = +$('inPre').value;
+  const d = compute(rooms, netKey, tvKey, stbKey, wifiKey, adultKey, pre);
+  const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', netName: NET[netKey].name,
+              total: won(d.total), supply: won(d.supply), vat: won(d.vat), perRoom: won(d.perRoom), internet: d.internet, tvAdd: d.tvAdd,
+              formula: d.lines.map(l => l.total < 0 ? `(${won(l.total)})` : won(l.total)).join(' + ') };
+  document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
+  const unitTxt = l => l.unit === 0 ? '무료' : won(l.unit);
+  $('rows').innerHTML = d.lines.map(l =>
+    `<tr><td class="svc">${l.svc}</td><td>${l.prod}</td><td>${l.basis}</td><td>3년</td><td>${l.qty}</td>` +
+    `<td class="num${l.hl?' hl':''}">${unitTxt(l)}</td><td class="num${l.hl?' hl':''}">${l.unit===0?'0':won(l.total)}</td></tr>`).join('');
+  $('mrows').innerHTML = d.lines.map(l =>
+    `<li class="${l.hl?'sub':''}"><div class="l"><b>${l.svc}</b><span>${l.prod} · ${l.basis} · 3년</span></div><div class="r"><b class="${l.hl?'hl':''}">${l.unit===0?'0':won(l.total)}</b><span>${l.qty} × ${unitTxt(l)}</span></div></li>`).join('');
+  const inst = [
+    { name:'IPTV 설치비 (1회성)', basis:`객실당 ${won(INSTALL_PER_ROOM)} + ${won(INSTALL_BASE)}`, qty: rooms, amt: d.install },
+    { name:'가입혜택 현금지급', basis:`객실당 ${won(BONUS_PER_ROOM)} · 개통 익월 말일 계좌지급`, qty: rooms, amt: d.bonus, hl:true },
+  ];
+  $('inst').innerHTML = inst.map(i => `<tr><td class="svc">${i.name}</td><td>${i.basis}</td><td>${i.qty}</td><td class="num${i.hl?' hl':''}">${won(i.amt)}</td></tr>`).join('');
+  $('minst').innerHTML = inst.map(i => `<li><div class="l"><b>${i.name}</b><span>${i.basis}</span></div><div class="r"><b class="${i.hl?'hl':''}">${won(i.amt)}</b><span>${i.qty}객실</span></div></li>`).join('');
+}
+
+function pdfName(){ const r = $('inRooms').value; const d = $('inDate').value.replace(/\D/g,''); return `SK_견적서_${r}객실_${d}.pdf`; }
+
+// ── 입력값을 URL 파라미터로 저장/복원 (크롬으로 열기 시 그대로 유지) ──
+const STATE_FIELDS = ['inRooms','inNet','inTv','inStb','inWifi','inAdult','inPre','inDate','inTo'];
+function stateUrl(){
+  const q = new URLSearchParams();
+  STATE_FIELDS.forEach(id => { const el = $(id); if (!el) return; q.set(id.replace(/^in/, '').toLowerCase(), el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
+  return location.origin + location.pathname + '?' + q.toString();
+}
+function restoreState(){
+  const q = new URLSearchParams(location.search); if (![...q.keys()].length) return false;
+  STATE_FIELDS.forEach(id => { const k = id.replace(/^in/, '').toLowerCase(); if (!q.has(k)) return; const el = $(id); if (!el) return;
+    if (el.type === 'checkbox') el.checked = q.get(k) === '1'; else el.value = q.get(k); });
+  return true;
+}
+function openInChrome(){
+  const url = stateUrl();
+  if (/Android/i.test(navigator.userAgent)) location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+  else location.href = 'x-safari-' + url;
+}
+
+(function init(){
+  const fill = (id, obj, def) => { $(id).innerHTML = Object.entries(obj).map(([k,o]) => `<option value="${k}">${typeof o === 'string' ? o : o.name}</option>`).join(''); $(id).value = def; };
+  fill('inNet', NET, 'b500'); fill('inTv', TV, 'std'); fill('inStb', STB, 'smart3'); fill('inWifi', WIFI, 'giga'); fill('inAdult', ADULT, 'none'); fill('inPre', PRE, '0');
+  const t = new Date();
+  const restored = restoreState();
+  if (!restored) $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
+  STATE_FIELDS.forEach(id => { const el = $(id); el.addEventListener('input', render); el.addEventListener('change', render); });
+  render();
+  try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) $('btnShare').hidden = false; } catch(e){}
+  if (/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
+    const bar = $('inapp'); const android = /Android/i.test(navigator.userAgent);
+    bar.innerHTML = android
+      ? `<span><b>카카오톡 안에서 열렸습니다.</b> 여기서는 PDF·JPG 저장이 막힙니다. 크롬으로 열어 주세요.</span><a href="#" onclick="openInChrome();return false">크롬으로 열기</a>`
+      : `<span><b>카카오톡 안에서 열렸습니다.</b> 여기서는 PDF·JPG 저장이 막힙니다. 오른쪽 아래 <b>공유 아이콘 → Safari로 열기</b>를 눌러 주세요.</span><a href="#" onclick="openInChrome();return false">Safari로 열기</a>`;
+    bar.classList.add('on');
+  }
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ── PDF 저장: 인쇄용 레이아웃을 그대로 이미지로 그려 A4 1장 PDF로 만든다 (PC 다운로드 / 휴대폰 공유·저장) ──
+const PDF_BRAND = { red:'#e8542a', soft:'#fff3ee', line:'#f5b79f' };
+function buildPdfStyles(){
+  if (document.getElementById('pdfmode-css')) return;
+  let css = '';
+  for (const sheet of document.styleSheets){
+    let rules; try { rules = sheet.cssRules; } catch(e){ continue; }
+    for (const r of rules){
+      if (r.type !== CSSRule.MEDIA_RULE || r.media.mediaText !== 'print') continue;
+      for (const s of r.cssRules){
+        if (s.type !== CSSRule.STYLE_RULE) continue;
+        const sel = s.selectorText;
+        if (sel === '*' || sel === 'html,body' || sel === 'html, body' || sel === '.panel') continue;
+        const mapped = sel.split(',').map(x => { x = x.trim(); return (x === ':root' || x === 'body') ? '.pdfmode' : '.pdfmode ' + x; }).join(',');
+        css += mapped + '{' + s.style.cssText.replace(/zoom:[^;]+;?/g, '') + '}\n';
+      }
+    }
+  }
+  css += `.pdfmode{display:none;width:640px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
+.pdfmode .page{max-width:none}
+.pdfmode .calc .sum dt.g{color:var(--ink);font-weight:700}
+.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}
+.pdfmode.narrow .calc{grid-template-columns:1fr 1.15fr;gap:12px}
+.pdfmode.narrow .calc .sum{padding-left:12px;column-gap:10px}
+.pdfmode.narrow .calc .sum dt,.pdfmode.narrow .total .side dt,.pdfmode.narrow .total .big .vat,.pdfmode.narrow .meta dt{white-space:nowrap}
+.pdfmode.narrow .total{grid-template-columns:1fr 1fr;gap:12px}
+.pdfmode.narrow .total .big{padding-right:12px}
+.pdfmode.narrow .total .big .amount{font-size:26px}
+.pdfmode.narrow .sec-head small{font-size:9.5px}
+.pdfmode.narrow .cmp .tile .v{font-size:13px}\n`;
+  const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
+}
+const PHONE_W = 440;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
+async function renderQuoteCanvas(mode){
+  const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
+  buildPdfStyles();
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode' + (mode === 'phone' ? ' narrow' : ''); wrap.style.width = W + 'px';
+  const clone = document.querySelector('main.page').cloneNode(true);
+  clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
+    const g = el.classList.contains('grand');
+    while (el.firstChild){ const c = el.firstChild; if (g && c.nodeType === 1) c.classList.add('g'); el.parentNode.insertBefore(c, el); }
+    el.remove();
+  });
+  wrap.appendChild(clone); document.body.appendChild(wrap);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    return await html2canvas(wrap, {
+      scale: SCALE, backgroundColor: "#ffffff", useCORS: true, logging: false, width: W, windowWidth: 1100,
+      onclone: doc => { const w = doc.querySelector('.pdfmode'); w.style.display = 'block'; w.style.position = 'static'; w.style.width = W + 'px'; }
+    });
+  } finally { wrap.remove(); }
+}
+function toast(html, ms){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms || 7000);
+}
+function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+function isInApp(){ return /KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent); }
+function triggerDownload(url, name){
+  const a = document.createElement('a'); a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+}
+function whereSaved(){
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return ios ? '파일 앱 → 나의 iPhone → 다운로드 (사파리 오른쪽 위 ↓ 아이콘)' : (isMobile() ? '내 파일 → 다운로드(Download) 폴더 · 크롬 메뉴 ⋮ → 다운로드' : '다운로드 폴더 (브라우저 오른쪽 위 ↓ 아이콘)');
+}
+async function shareBlob(blob, name){
+  const file = new File([blob], name, { type: blob.type });
+  if (!(navigator.canShare && navigator.canShare({ files: [file] }))) { toast('이 브라우저는 파일 공유를 지원하지 않습니다. 다운로드로 저장해 주세요.', 4000); return; }
+  try { await navigator.share({ files: [file], title: name }); toast(`<b>${name}</b><br>선택한 앱으로 보냈습니다.`, 4000); }
+  catch(e){ if (!(e && e.name === 'AbortError')) toast('공유하지 못했습니다. 다운로드로 저장해 주세요.', 4000); }
+}
+// 저장 결과 화면: 다운로드 + 새 탭 열기 + 공유 + (이미지) 길게 눌러 저장
+function showResult(blob, name, isImage){
+  const url = URL.createObjectURL(blob);
+  document.querySelectorAll('.sheet').forEach(x => x.remove());
+  const sh = document.createElement('div'); sh.className = 'sheet';
+  const inapp = isInApp();
+  sh.innerHTML = `<div class="box">
+    <h3>${isImage ? 'JPG' : 'PDF'} 파일이 준비되었습니다</h3>
+    <div class="name">${name}</div>
+    ${isImage ? `<div class="prev"><img alt="견적서 미리보기"></div>` : ''}
+    <div class="hint">${inapp
+      ? '<b>카카오톡 안에서 열린 화면</b>이라 다운로드·공유가 막힙니다. 아래 버튼을 누르면 <b>입력한 내용 그대로 크롬에서 열리고</b>, 거기서 저장 버튼을 누르면 됩니다. 위 이미지를 <b>길게 눌러 이미지 저장</b>이 되면 그것도 방법입니다.'
+      : (isImage ? '휴대폰에서는 <b>위 이미지를 길게 눌러 "이미지 저장"</b>을 하면 사진첩에 바로 저장됩니다. 파일로 받으려면 <b>다운로드</b>를 누르세요.' : '<b>다운로드</b>를 누르면 파일로 저장되고, <b>새 탭에서 열기</b>를 누르면 바로 볼 수 있습니다.')}
+      <br>저장 위치: ${whereSaved()}</div>
+    <div class="acts">${inapp
+      ? `<button type="button" class="pri" data-act="chrome">${/Android/i.test(navigator.userAgent) ? '크롬으로 열어서 저장' : 'Safari로 열어서 저장'}</button><button type="button" data-act="close">닫기</button>`
+      : `<button type="button" class="pri" data-act="dl">다운로드</button>
+      <a href="${url}" target="_blank" rel="noopener">새 탭에서 열기</a>
+      <button type="button" data-act="share" ${isMobile() ? '' : 'hidden'}>공유 (카톡)</button>
+      <button type="button" data-act="close">닫기</button>`}
+    </div>
+  </div>`;
+  document.body.appendChild(sh);
+  if (isImage) sh.querySelector('img').src = url;
+  sh.addEventListener('click', e => {
+    const act = e.target.dataset && e.target.dataset.act;
+    if (e.target === sh || act === 'close'){ sh.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); return; }
+    if (act === 'dl'){ triggerDownload(url, name); toast(`<b>${name}</b><br>저장 위치: ${whereSaved()}`); }
+    if (act === 'share'){ shareBlob(blob, name); }
+    if (act === 'chrome'){ openInChrome(); }
+  });
+}
+async function shareOrDownload(blob, name){
+  const isImage = blob.type.startsWith('image/');
+  if (isMobile() || isInApp()){ showResult(blob, name, isImage); return; }
+  const url = URL.createObjectURL(blob);
+  triggerDownload(url, name);
+  setTimeout(() => URL.revokeObjectURL(url), 20000);
+  toast(`<b>${name}</b><br>저장 위치: ${whereSaved()}`);
+}
+async function shareJpg(){
+  const btn = document.getElementById('btnShare'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = '준비 중…';
+  try {
+    const canvas = await renderQuoteCanvas('phone');
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    await shareBlob(blob, pdfName().replace(/\.pdf$/, '.jpg'));
+  } catch(e) { alert('공유하지 못했습니다. (' + (e && e.message || e) + ')'); }
+  finally { btn.disabled = false; btn.textContent = label; }
+}
+async function saveJpg(){
+  const btn = document.getElementById('btnJpg'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'JPG 만드는 중…';
+  try {
+    const canvas = await renderQuoteCanvas('phone');
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    await shareOrDownload(blob, pdfName().replace(/\.pdf$/, '.jpg'));
+  } catch(e) {
+    alert('JPG를 만들지 못했습니다. (' + (e && e.message || e) + ')');
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
+function buildPhoneStyles(){
+  if (document.getElementById('phonemode-css')) return;
+  const st = document.createElement('style'); st.id = 'phonemode-css';
+  st.textContent = `.phonemode{display:none;width:${PHONE_W}px;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
+.phonemode .page{max-width:none}`;
+  document.head.appendChild(st);
+}
+async function renderPhoneCanvas(){
+  buildPhoneStyles();
+  const wrap = document.createElement('div'); wrap.className = 'phonemode';
+  const clone = document.querySelector('main.page').cloneNode(true);
+  clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
+    const g = el.classList.contains('grand');
+    while (el.firstChild){ const c = el.firstChild; if (g && c.nodeType === 1) c.classList.add('g'); el.parentNode.insertBefore(c, el); }
+    el.remove();
+  });
+  wrap.appendChild(clone); document.body.appendChild(wrap);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    // windowWidth를 좁게 주면 화면용 모바일 CSS(카드형)가 그대로 적용된다
+    return await html2canvas(wrap, {
+      scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, width: PHONE_W, windowWidth: PHONE_W,
+      onclone: doc => { const w = doc.querySelector('.phonemode'); w.style.display = 'block'; w.style.position = 'static';
+        const g = doc.createElement('style'); g.textContent = '.phonemode .calc .sum dt.g{color:var(--ink);font-weight:700}.phonemode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:20px}'; doc.head.appendChild(g); }
+    });
+  } finally { wrap.remove(); }
+}
+async function savePdf(){
+  const btn = document.getElementById('btnPdf'); const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'PDF 만드는 중…';
+  try {
+    const canvas = await renderQuoteCanvas();
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const mL = 10, mT = 10, W = 210 - 2*mL, H = 297 - 2*mT;
+    let w = W, h = W * canvas.height / canvas.width;
+    if (h > H){ h = H; w = H * canvas.width / canvas.height; }
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', mL + (W - w)/2, mT, w, h);
+    await shareOrDownload(pdf.output('blob'), pdfName());
+  } catch(e) {
+    alert('PDF를 만들지 못했습니다. 인쇄 버튼에서 "PDF로 저장"을 이용해 주세요.\n(' + (e && e.message || e) + ')');
+  } finally { btn.disabled = false; btn.textContent = label; }
+}
+</script>
+
+</body>
+</html>

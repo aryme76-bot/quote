@@ -4,6 +4,7 @@
 
 - KT 멀티룸: https://aryme76-bot.github.io/quote/kt.html
 - LG U+ 멀티라인: https://aryme76-bot.github.io/quote/lg.html
+- SK 브로드밴드: https://aryme76-bot.github.io/quote/sk.html
 - 목록: https://aryme76-bot.github.io/quote/
 
 게시 브랜치: `gh-pages`
