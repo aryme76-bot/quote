@@ -310,7 +310,7 @@
   </section>
 
   <section class="section">
-    <div class="sec-head"><h2>1회성 비용 · 가입 혜택</h2><small>단위: 원 · VAT 포함</small></div>
+    <div class="sec-head"><h2>설치비 (최초 1회)</h2><small>단위: 원 · VAT 포함</small></div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -327,7 +327,7 @@
     <ul class="notice">
       <li>3년 약정 · 결합할인 기준이며, 월요금 단가는 부가세 별도입니다. 약정 이내 해지 시 사은품 및 할인반환금이 청구됩니다.</li>
       <li>객실 <span data-v="rooms"></span>실 기준으로 인터넷 <span data-v="internet"></span>회선(8객실당 1회선), IPTV 첫 1회선 + 추가 <span data-v="tvAdd"></span>회선(다셋탑 할인), 셋탑박스 <span data-v="rooms"></span>대, Wi-Fi <span data-v="rooms"></span>대로 구성되었습니다.</li>
-      <li>IPTV 설치비는 1회성으로 발생하며, 가입 지원금에서 공제 후 선납 처리할 수 있습니다. 선로공사 및 인터넷 설치비는 3년 약정 시 면제됩니다.</li>
+      <li>IPTV 설치비는 최초 1회 별도 청구됩니다. 선로공사 및 인터넷 설치비는 3년 약정 시 면제됩니다.</li>
       <li>요금할인은 36개월 이후 자동 소멸(정상요금 부과)되며, 34개월 차 재약정 대상입니다. 세대별 1:1 방식 UP/DOWN 인터넷을 제공합니다.</li>
       <li>신청서 접수일로부터 5~20일 이내 개통 완료됩니다. (광구축 일정에 따라 변동 가능)</li>
     </ul>
@@ -368,7 +368,6 @@ const ADULT = { none:{ name:'없음', price:0 }, playboy:{ name:'플레이보이
 const PRE   = { 0:'없음', 1000:'-1,000원', 2000:'-2,000원', 3000:'-3,000원', 4000:'-4,000원', 5000:'-5,000원' };   // 객실당 요금할인(선납권)
 const ROOMS_PER_LINE = 8;
 const INSTALL_PER_ROOM = 17600, INSTALL_BASE = 4400;   // IPTV 설치비 (VAT 포함) = 객실수 × 17,600 + 4,400
-const BONUS_PER_ROOM = 176000;                         // 가입혜택 현금지급 (VAT 포함) = 객실수 × 176,000
 const won = n => n.toLocaleString('ko-KR');
 const $ = id => document.getElementById(id);
 
@@ -387,8 +386,8 @@ function compute(rooms, netKey, tvKey, stbKey, wifiKey, adultKey, pre){
   if (pre > 0) lines.push({ svc:'요금할인', prod:'선납권 ' + PRE[pre], basis:'객실당', qty: rooms, unit: -pre, hl:true });
   const out = lines.map(l => ({...l, total: l.qty * l.unit}));
   const supply = out.reduce((a,l)=>a+l.total,0), vat = Math.round(supply*0.1), total = supply + vat;
-  const install = rooms * INSTALL_PER_ROOM + INSTALL_BASE, bonus = rooms * BONUS_PER_ROOM;
-  return { rooms, internet, tvAdd, lines: out, supply, vat, total, perRoom: Math.round(total / rooms), install, bonus };
+  const install = rooms * INSTALL_PER_ROOM + INSTALL_BASE;
+  return { rooms, internet, tvAdd, lines: out, supply, vat, total, perRoom: Math.round(total / rooms), install };
 }
 
 function render(){
@@ -406,8 +405,7 @@ function render(){
   $('mrows').innerHTML = d.lines.map(l =>
     `<li class="${l.hl?'sub':''}"><div class="l"><b>${l.svc}</b><span>${l.prod} · ${l.basis} · 3년</span></div><div class="r"><b class="${l.hl?'hl':''}">${l.unit===0?'0':won(l.total)}</b><span>${l.qty} × ${unitTxt(l)}</span></div></li>`).join('');
   const inst = [
-    { name:'IPTV 설치비 (1회성)', basis:`객실당 ${won(INSTALL_PER_ROOM)} + ${won(INSTALL_BASE)}`, qty: rooms, amt: d.install },
-    { name:'가입혜택 현금지급', basis:`객실당 ${won(BONUS_PER_ROOM)} · 개통 익월 말일 계좌지급`, qty: rooms, amt: d.bonus, hl:true },
+    { name:'IPTV 설치비 (1회성)', basis:`객실당 ${won(INSTALL_PER_ROOM)} + ${won(INSTALL_BASE)}`, qty: rooms, amt: d.install, hl:true },
   ];
   $('inst').innerHTML = inst.map(i => `<tr><td class="svc">${i.name}</td><td>${i.basis}</td><td>${i.qty}</td><td class="num${i.hl?' hl':''}">${won(i.amt)}</td></tr>`).join('');
   $('minst').innerHTML = inst.map(i => `<li><div class="l"><b>${i.name}</b><span>${i.basis}</span></div><div class="r"><b class="${i.hl?'hl':''}">${won(i.amt)}</b><span>${i.qty}객실</span></div></li>`).join('');
