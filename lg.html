@@ -82,6 +82,7 @@
   .formlink .t span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .formlink .dl{flex-shrink:0;font-size:13px;font-weight:700;color:var(--red)}
   @media print{.noprint{display:none}}
+  #formsSection[hidden]{display:none}
   footer{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px}
   footer b{font-size:15px;font-weight:700}
   footer span{color:var(--muted)}
@@ -257,7 +258,7 @@
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
-  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button><button type="button" id="btnShare" class="ghost" onclick="shareJpg()" hidden>공유 (카톡)</button></div>
+  <div class="btns"><button type="button" class="ghost" onclick="window.print()">인쇄</button><button type="button" id="btnPdf" onclick="savePdf()">PDF 저장</button><button type="button" id="btnJpg" class="ghost" onclick="saveJpg()">JPG 저장</button><button type="button" id="btnShare" class="ghost" onclick="shareJpg()" hidden>공유 (카톡)</button><button type="button" class="ghost" onclick="document.getElementById('formsSection').hidden = false; document.getElementById('formsSection').scrollIntoView({behavior:'smooth'})">신청서 (직원용)</button></div>
 </form>
 
 <main class="page">
@@ -332,8 +333,8 @@
     </ul>
   </section>
 
-  <section class="section noprint">
-    <div class="sec-head"><h2>신청서 다운로드</h2><small>LG U+ 멀티라인서비스 · PDF</small></div>
+  <section class="section noprint" id="formsSection" hidden>
+    <div class="sec-head"><h2>신청서 다운로드</h2><small>LG U+ 멀티라인서비스 · PDF · 직원용 · 고객 공유 화면에는 보이지 않습니다</small></div>
     <div class="formlinks">
       <a class="formlink" href="LG_신규신청서.pdf" download="LG_가입신청서_멀티라인서비스.pdf">
         <span class="badge">PDF</span>
