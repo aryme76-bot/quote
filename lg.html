@@ -25,7 +25,7 @@
     --red:#ff5fb3; --red-soft:#2a1722; --red-line:#6b2a4f;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5;word-break:keep-all;overflow-wrap:break-word}
   .page{max-width:900px;margin:0 auto;background:var(--page);padding:56px 56px 40px;display:flex;flex-direction:column;gap:36px}
   .brand{display:flex;align-items:flex-start;gap:14px}
   .brand .kt{font-size:38px;font-weight:900;color:var(--red);letter-spacing:-1px;line-height:1}
@@ -74,8 +74,9 @@
   .notice li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--red)}
   .notice .note{color:var(--muted);font-size:13px}
   .formlinks{display:flex;gap:12px;flex-wrap:wrap}
-  .formlink{flex:1 1 240px;display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;color:inherit;background:var(--page)}
+  .formlink{flex:1 1 240px;display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;color:inherit;background:var(--page);font:inherit;text-align:left;cursor:pointer}
   .formlink:hover,.formlink:focus-visible{border-color:var(--red);outline:none}
+  .formlink:disabled{opacity:.6;cursor:wait}
   .formlink .badge{flex-shrink:0;width:40px;height:40px;border-radius:9px;background:var(--red-soft);color:var(--red);font-size:11px;font-weight:900;letter-spacing:.02em;display:flex;align-items:center;justify-content:center}
   .formlink .t{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
   .formlink .t b{font-size:15px;font-weight:700}
@@ -336,16 +337,16 @@
   <section class="section noprint" id="formsSection" hidden>
     <div class="sec-head"><h2>신청서 다운로드</h2><small>LG U+ 멀티라인서비스 · PDF · 직원용 · 고객 공유 화면에는 보이지 않습니다</small></div>
     <div class="formlinks">
-      <a class="formlink" href="LG_신규신청서.pdf" download="LG_가입신청서_멀티라인서비스.pdf">
+      <button type="button" class="formlink" onclick="downloadForm('forms/LG_신규신청서.pdf','LG_가입신청서_멀티라인서비스.pdf', this)">
         <span class="badge">PDF</span>
         <span class="t"><b>신규 신청서</b><span>가입신청서_멀티라인서비스</span></span>
         <span class="dl">다운로드</span>
-      </a>
-      <a class="formlink" href="LG_변경신청서.pdf" download="LG_변경신청서_멀티라인서비스.pdf">
+      </button>
+      <button type="button" class="formlink" onclick="downloadForm('forms/LG_변경신청서.pdf','LG_변경신청서_멀티라인서비스.pdf', this)">
         <span class="badge">PDF</span>
         <span class="t"><b>변경 신청서</b><span>변경신청서_멀티라인서비스</span></span>
         <span class="dl">다운로드</span>
-      </a>
+      </button>
     </div>
   </section>
 
@@ -517,7 +518,7 @@ function buildPdfStyles(){
 .pdfmode.narrow .cmp .tile .v{font-size:13px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
-const PHONE_W = 425;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
+const PHONE_W = 460;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율에 맞는다
 async function renderQuoteCanvas(mode){
   const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
   buildPdfStyles();
@@ -596,6 +597,20 @@ async function shareOrDownload(blob, name){
   triggerDownload(url, name);
   setTimeout(() => URL.revokeObjectURL(url), 20000);
   toast(`<b>${name}</b><br>저장 위치: ${whereSaved()}`);
+}
+async function downloadForm(url, name, btn){
+  const label = btn.querySelector('.dl').textContent;
+  btn.disabled = true; btn.querySelector('.dl').textContent = '불러오는 중…';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    await shareOrDownload(new Blob([blob], { type: 'application/pdf' }), name);
+  } catch(e) {
+    toast('신청서를 불러오지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.', 5000);
+  } finally {
+    btn.disabled = false; btn.querySelector('.dl').textContent = label;
+  }
 }
 async function shareJpg(){
   const btn = document.getElementById('btnShare'); const label = btn.textContent;

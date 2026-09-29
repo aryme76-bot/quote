@@ -25,7 +25,7 @@
     --red:#ff8a5c; --red-soft:#2b1a14; --red-line:#6b3a2a;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-variant-numeric:tabular-nums;line-height:1.5;word-break:keep-all;overflow-wrap:break-word}
   .page{max-width:900px;margin:0 auto;background:var(--page);padding:56px 56px 40px;display:flex;flex-direction:column;gap:36px}
   .brand{display:flex;align-items:flex-start;gap:14px}
   .brand .kt{font-size:38px;font-weight:900;color:var(--red);letter-spacing:-1px;line-height:1}
@@ -485,7 +485,7 @@ function buildPdfStyles(){
 .pdfmode.narrow .cmp .tile .v{font-size:13px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
-const PHONE_W = 440;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율(1:2.3)에 맞는다
+const PHONE_W = 470;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율에 맞는다
 async function renderQuoteCanvas(mode){
   const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
   buildPdfStyles();
