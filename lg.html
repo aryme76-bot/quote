@@ -104,6 +104,7 @@
   .cmp .tile.on .v{color:var(--red)}
   .cmp .tile .s{font-size:12px;color:var(--muted)}
   .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  #settopChkWrap[hidden]{display:none}
   .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   .panel input.to{width:190px}
   .panel label.chk{color:var(--ink);font-weight:500}
@@ -198,14 +199,12 @@
     .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
     .meta{min-width:0;width:100%}
   }
-  @page{size:A4 portrait;margin:12mm 10mm}
+  @page{size:A4 portrait;margin:20mm 20mm 15mm 20mm}
   @media print{
-    /* 문서 높이를 A4 1장(인쇄 영역 273mm)보다 작게 고정 → 2페이지 생성 불가 */
-    html,body{width:auto;height:262mm;max-height:262mm;overflow:hidden}
     :root{--bg:#fff;--page:#fff}
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
     .panel{display:none}
-    .page{max-width:none;padding:0;gap:10px;zoom:.8}
+    .page{max-width:none;padding:0;gap:10px}
     .brand .kt{font-size:24px}
     .brand .sub{font-size:11px}
     h1{font-size:22px}
@@ -256,6 +255,7 @@
   <label>인터넷 <select id="inNet" aria-label="인터넷 상품"></select></label>
   <label>IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
   <label class="chk"><input id="inDisc" type="checkbox" aria-label="인터넷 회선당 6,000원 할인"> 인터넷 회선당 6,000원 할인 (VAT 별도)</label>
+  <label class="chk" id="settopChkWrap"><input id="inSettop" type="checkbox" checked aria-label="셋탑임대료 반영 여부"> 셋탑임대료 반영 (재약정)</label>
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
@@ -379,10 +379,11 @@ const WIFI = 0;             // Wi-Fi 무료
 const ROOMS_PER_LINE = 8;   // 1:8 구조
 const won = n => n.toLocaleString('ko-KR');
 
-function compute(rooms, term, typeKey, netKey, tvKey, disc){
+function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn){
   const internet = Math.ceil(rooms / ROOMS_PER_LINE);
   const tvBasic = internet, tvAdd = rooms - internet, wifi = rooms, tvTotal = rooms;
-  const net = NET[netKey], tv = TV[tvKey], settop = TYPES[typeKey].settop(tvKey);
+  const net = NET[netKey], tv = TV[tvKey];
+  const settop = (typeKey === 're' && settopOn === false) ? 0 : TYPES[typeKey].settop(tvKey);
   const lines = [
     { svc: net.name, kind:'기본료', prod:'인터넷', qty: internet, unit: net.price[term] },
   ];
@@ -413,7 +414,9 @@ function fillTv(){
 function render(){
   const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
   const term = +$('inTerm').value, typeKey = $('inType').value, netKey = $('inNet').value, tvKey = $('inTv').value, disc = $('inDisc').checked;
-  const d = compute(rooms, term, typeKey, netKey, tvKey, disc);
+  const settopOn = $('inSettop').checked;
+  $('settopChkWrap').hidden = (typeKey !== 're');
+  const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn);
   const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
               netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat),
               internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, tvTotal: d.tvTotal, settop: won(d.settop),
@@ -429,12 +432,14 @@ function render(){
   }).join('');
   $('cmp').style.gridTemplateColumns = `repeat(${TYPES[typeKey].terms.length},1fr)`;
   $('cmp').innerHTML = TYPES[typeKey].terms.map(t => {
-    const c = compute(rooms, t, typeKey, netKey, tvKey, disc);
+    const c = compute(rooms, t, typeKey, netKey, tvKey, disc, settopOn);
     return `<div class="tile${t===term?' on':''}"><div class="t">${t}년 약정</div><div class="v">${won(c.total)}원</div><div class="s">공급가액 ${won(c.supply)}원 · 객실당 ${won(Math.round(c.supply/rooms))}원</div></div>`;
   }).join('');
   $('settopnote').textContent = d.settop
     ? `셋탑박스 임대료는 TV 1대당 월 ${won(d.settop)}원으로 총 ${d.tvTotal}대가 포함되었으며, Wi-Fi(100M/기가)는 무료입니다.`
-    : `${TV[tvKey].name} 재약정은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
+    : (typeKey === 're' && !settopOn)
+      ? `셋탑박스 임대료 반영 체크를 해제해 월 0원으로 처리했으며, Wi-Fi(100M/기가)는 무료입니다.`
+      : `${TV[tvKey].name} 재약정은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
   $('discnote').textContent = disc
     ? `인터넷 1회선당 ${won(NET_DISC)}원(VAT 별도) 할인이 적용되어 공급가액에서 월 ${won(d.discTotal)}원(인터넷 ${d.internet}회선)이 차감되었습니다.`
     : `인터넷 회선당 할인은 적용되지 않았습니다.`;
@@ -442,7 +447,7 @@ function render(){
 
 function pdfName(){ const r = $('inRooms').value; const d = $('inDate').value.replace(/\D/g,''); return `LG_견적서_${TYPES[$('inType').value].name}_${r}객실_${d}.pdf`; }
 // ── 입력값을 URL 파라미터로 저장/복원 (크롬으로 열기 시 그대로 유지) ──
-const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inDate','inTo'];
+const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inSettop','inDate','inTo'];
 function stateUrl(){
   const q = new URLSearchParams();
   STATE_FIELDS.forEach(id => { const el = document.getElementById(id); if (!el) return; q.set(id.replace(/^in/, '').toLowerCase(), el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
@@ -468,8 +473,8 @@ function openInChrome(){
   const t = new Date();
   const restored = restoreState(); if (restored){ fillTerm(); fillTv(); const q = new URLSearchParams(location.search); if (q.has('term')) $('inTerm').value = q.get('term'); if (q.has('tv')) $('inTv').value = q.get('tv'); if (q.has('disc')) $('inDisc').checked = q.get('disc') === '1'; }
   if (!restored) $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
-  $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; render(); });
-  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
+  $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; $('inSettop').checked = true; render(); });
+  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc','inSettop'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
   render();
   try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
   if (/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
@@ -667,7 +672,7 @@ async function savePdf(){
     const canvas = await renderQuoteCanvas();
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const mL = 10, mT = 10, W = 210 - 2*mL, H = 297 - 2*mT;
+    const mL = 20, mT = 20, mB = 15, W = 210 - 2*mL, H = 297 - mT - mB;   // 한글 편집용지 '보통' 기본값(위20·아래15·좌우20mm)
     let w = W, h = W * canvas.height / canvas.width;
     if (h > H){ h = H; w = H * canvas.width / canvas.height; }
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', mL + (W - w)/2, mT, w, h);

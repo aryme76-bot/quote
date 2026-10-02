@@ -188,14 +188,12 @@
     .calc .sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
     .meta{min-width:0;width:100%}
   }
-  @page{size:A4 portrait;margin:12mm 10mm}
+  @page{size:A4 portrait;margin:20mm 20mm 15mm 20mm}
   @media print{
-    /* 문서 높이를 A4 1장(인쇄 영역 273mm)보다 작게 고정 → 2페이지 생성 불가 */
-    html,body{width:auto;height:262mm;max-height:262mm;overflow:hidden}
     :root{--bg:#fff;--page:#fff}
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;font-size:10.5px;background:#fff;line-height:1.35}
     .panel{display:none}
-    .page{max-width:none;padding:0;gap:10px;zoom:.8}
+    .page{max-width:none;padding:0;gap:10px}
     .brand .kt{font-size:24px}
     .brand .sub{font-size:11px}
     h1{font-size:22px}
@@ -620,7 +618,7 @@ async function savePdf(){
     const canvas = await renderQuoteCanvas();
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const mL = 10, mT = 10, W = 210 - 2*mL, H = 297 - 2*mT;
+    const mL = 20, mT = 20, mB = 15, W = 210 - 2*mL, H = 297 - mT - mB;   // 한글 편집용지 '보통' 기본값(위20·아래15·좌우20mm)
     let w = W, h = W * canvas.height / canvas.width;
     if (h > H){ h = H; w = H * canvas.width / canvas.height; }
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', mL + (W - w)/2, mT, w, h);
