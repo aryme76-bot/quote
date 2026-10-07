@@ -255,7 +255,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>서비스</th><th>구분</th><th>속도/채널</th><th>약정</th><th>회선</th><th>공급단가</th><th>부가세</th><th>공급가+부가세 합계</th></tr>
+          <tr><th>서비스</th><th>구분</th><th>속도/채널</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가액</th><th>부가세</th><th>합계</th></tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
@@ -340,7 +340,7 @@ function compute(rooms){
 
 function row(svc, kind, speed, term, qty, unit, total, hl){
   const vat = Math.round(total*0.1);
-  return `<tr><td class="svc">${svc}</td><td>${kind}</td><td>${speed}</td><td>${term}</td><td>${qty}</td><td class="num">${won(unit)}</td><td class="num vat">${won(vat)}</td><td class="num${hl?' hl':''}">${won(total+vat)}</td></tr>`;
+  return `<tr><td class="svc">${svc}</td><td>${kind}</td><td>${speed}</td><td>${term}</td><td>${qty}</td><td class="num">${won(unit)}</td><td class="num">${won(total)}</td><td class="num vat">${won(vat)}</td><td class="num${hl?' hl':''}">${won(total+vat)}</td></tr>`;
 }
 
 function render(){
@@ -359,7 +359,7 @@ function render(){
     row('','모뎀 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
     row('Wi-Fi 단말기','기기 임대료','-','3년',d.wifi,P.wifi.base,d.parts[5],true),
   ].join('');
-  const mi = (svc, sub, qty, unit, total, hl, cls) => { const vat = Math.round(total*0.1); return `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total+vat)}</b><span>${qty} × ${won(unit)}${unit?` <i>(부가세 ${won(vat)})</i>`:''}</span></div></li>`; };
+  const mi = (svc, sub, qty, unit, total, hl, cls) => { const vat = Math.round(total*0.1); return `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total+vat)}</b><span>${qty} × ${won(unit)} = ${won(total)}${unit?` <i>(부가세 ${won(vat)})</i>`:''}</span></div></li>`; };
   document.getElementById('mrows').innerHTML = [
     mi('인터넷 베이직','기본료 · 500M · 3년',d.internet,P.internet.base,d.parts[0]),
     mi('지니TV Biz 기본','기본료 · 라이트 · 3년',d.tvBasic,P.tvBasic.base,d.parts[1]),

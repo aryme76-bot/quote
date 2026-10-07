@@ -281,7 +281,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>구분</th><th>공급상품</th><th>단가 기준</th><th>약정</th><th>회선</th><th>공급단가</th><th>부가세</th><th>공급가+부가세 합계</th></tr>
+          <tr><th>구분</th><th>공급상품</th><th>단가 기준</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가액</th><th>부가세</th><th>합계</th></tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
@@ -392,14 +392,15 @@ function render(){
               formula: d.lines.map(l => l.total < 0 ? `(${won(l.total)})` : won(l.total)).join(' + ') };
   document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
   const unitTxt = l => l.unit === 0 ? '무료' : won(l.unit);
+  const subtotalTxt = l => l.unit === 0 ? '0' : won(l.total);
   const vatAmt = l => l.unit === 0 ? 0 : Math.round(l.total*0.1);
   const vatTxt = l => l.unit === 0 ? '무료' : won(vatAmt(l));
   const grandTxt = l => l.unit === 0 ? '0' : won(l.total + vatAmt(l));
   $('rows').innerHTML = d.lines.map(l =>
     `<tr><td class="svc">${l.svc}</td><td>${l.prod}</td><td>${l.basis}</td><td>3년</td><td>${l.qty}</td>` +
-    `<td class="num${l.hl?' hl':''}">${unitTxt(l)}</td><td class="num vat">${vatTxt(l)}</td><td class="num${l.hl?' hl':''}">${grandTxt(l)}</td></tr>`).join('');
+    `<td class="num${l.hl?' hl':''}">${unitTxt(l)}</td><td class="num${l.hl?' hl':''}">${subtotalTxt(l)}</td><td class="num vat">${vatTxt(l)}</td><td class="num${l.hl?' hl':''}">${grandTxt(l)}</td></tr>`).join('');
   $('mrows').innerHTML = d.lines.map(l =>
-    `<li class="${l.hl?'sub':''}"><div class="l"><b>${l.svc}</b><span>${l.prod} · ${l.basis} · 3년</span></div><div class="r"><b class="${l.hl?'hl':''}">${grandTxt(l)}</b><span>${l.qty} × ${unitTxt(l)}${l.unit?` <i>(부가세 ${vatTxt(l)})</i>`:''}</span></div></li>`).join('');
+    `<li class="${l.hl?'sub':''}"><div class="l"><b>${l.svc}</b><span>${l.prod} · ${l.basis} · 3년</span></div><div class="r"><b class="${l.hl?'hl':''}">${grandTxt(l)}</b><span>${l.qty} × ${unitTxt(l)}${l.unit?` = ${subtotalTxt(l)} <i>(부가세 ${vatTxt(l)})</i>`:''}</span></div></li>`).join('');
   const inst = [
     { name:'IPTV 설치비 (1회성)', basis:`객실당 ${won(INSTALL_PER_ROOM)} + ${won(INSTALL_BASE)}`, qty: rooms, amt: d.install, hl:true },
   ];
