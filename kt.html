@@ -125,6 +125,8 @@
   .mlist .r b{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
   .mlist .r b.hl{color:var(--red)}
   .mlist .r span{font-size:12px;color:var(--muted)}
+  .mlist .r span i{font-style:normal;color:var(--faint)}
+  table td.vat{color:var(--faint)}
   @media screen and (max-width:720px){
     .panel{padding:10px 14px;gap:8px 10px}
     .panel label{flex:1 1 44%;flex-direction:column;align-items:stretch;gap:3px;font-size:12px}
@@ -260,7 +262,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>서비스</th><th>구분</th><th>속도/채널</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가합계</th></tr>
+          <tr><th>서비스</th><th>구분</th><th>속도/채널</th><th>약정</th><th>회선</th><th>공급단가</th><th>VAT 포함 단가</th><th>공급가합계</th></tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
@@ -344,7 +346,7 @@ function compute(rooms){
 }
 
 function row(svc, kind, speed, term, qty, unit, total, hl){
-  return `<tr><td class="svc">${svc}</td><td>${kind}</td><td>${speed}</td><td>${term}</td><td>${qty}</td><td class="num">${won(unit)}</td><td class="num${hl?' hl':''}">${won(total)}</td></tr>`;
+  return `<tr><td class="svc">${svc}</td><td>${kind}</td><td>${speed}</td><td>${term}</td><td>${qty}</td><td class="num">${won(unit)}</td><td class="num vat">${won(Math.round(unit*1.1))}</td><td class="num${hl?' hl':''}">${won(total)}</td></tr>`;
 }
 
 function render(){
@@ -363,7 +365,7 @@ function render(){
     row('','모뎀 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
     row('Wi-Fi 단말기','기기 임대료','-','3년',d.wifi,P.wifi.base,d.parts[5],true),
   ].join('');
-  const mi = (svc, sub, qty, unit, total, hl, cls) => `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total)}</b><span>${qty} × ${won(unit)}</span></div></li>`;
+  const mi = (svc, sub, qty, unit, total, hl, cls) => `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total)}</b><span>${qty} × ${won(unit)}${unit?` <i>(VAT포함 ${won(Math.round(unit*1.1))})</i>`:''}</span></div></li>`;
   document.getElementById('mrows').innerHTML = [
     mi('인터넷 베이직','기본료 · 500M · 3년',d.internet,P.internet.base,d.parts[0]),
     mi('지니TV Biz 기본','기본료 · 라이트 · 3년',d.tvBasic,P.tvBasic.base,d.parts[1]),

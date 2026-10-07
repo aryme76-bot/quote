@@ -150,6 +150,8 @@
   .mlist .r b{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
   .mlist .r b.hl{color:var(--red)}
   .mlist .r span{font-size:12px;color:var(--muted)}
+  .mlist .r span i{font-style:normal;color:var(--faint)}
+  table td.vat{color:var(--faint)}
   @media screen and (max-width:720px){
     .panel{padding:10px 14px;gap:8px 10px}
     .panel label{flex:1 1 44%;flex-direction:column;align-items:stretch;gap:3px;font-size:12px}
@@ -297,7 +299,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>서비스</th><th>구분</th><th>상품</th><th>약정</th><th>회선</th><th>공급단가</th><th>공급가합계</th></tr>
+          <tr><th>서비스</th><th>구분</th><th>상품</th><th>약정</th><th>회선</th><th>공급단가</th><th>VAT 포함 단가</th><th>공급가합계</th></tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
@@ -424,11 +426,14 @@ function render(){
   document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
   $('rows').innerHTML = d.lines.map(l =>
     `<tr><td class="svc">${l.svc}</td><td>${l.kind}</td><td>${l.prod}</td><td>${l.kind==='기본료'?term+'년':'-'}</td><td>${l.qty}</td>` +
-    `<td class="num${l.hl?' hl':''}">${l.unit===0?(l.svc==='셋탑박스'?'없음':'무료'):won(l.unit)}</td><td class="num${l.hl?' hl':''}">${l.unit===0?'0':won(l.total)}</td></tr>`).join('');
+    `<td class="num${l.hl?' hl':''}">${l.unit===0?(l.svc==='셋탑박스'?'없음':'무료'):won(l.unit)}</td>` +
+    `<td class="num vat">${l.unit===0?(l.svc==='셋탑박스'?'없음':'무료'):won(Math.round(l.unit*1.1))}</td>` +
+    `<td class="num${l.hl?' hl':''}">${l.unit===0?'0':won(l.total)}</td></tr>`).join('');
   $('mrows').innerHTML = d.lines.map(l => {
     const sub = [l.kind, l.prod !== '-' ? l.prod : null, l.kind === '기본료' ? term + '년' : null].filter(Boolean).join(' · ');
     const unit = l.unit === 0 ? (l.svc === '셋탑박스' ? '없음' : '무료') : won(l.unit);
-    return `<li class="${l.hl ? 'sub' : ''}"><div class="l"><b>${l.svc}</b><span>${sub}</span></div><div class="r"><b class="${l.hl ? 'hl' : ''}">${l.unit === 0 ? '0' : won(l.total)}</b><span>${l.qty} × ${unit}</span></div></li>`;
+    const unitVat = l.unit === 0 ? (l.svc === '셋탑박스' ? '없음' : '무료') : won(Math.round(l.unit*1.1));
+    return `<li class="${l.hl ? 'sub' : ''}"><div class="l"><b>${l.svc}</b><span>${sub}</span></div><div class="r"><b class="${l.hl ? 'hl' : ''}">${l.unit === 0 ? '0' : won(l.total)}</b><span>${l.qty} × ${unit}${l.unit?` <i>(VAT포함 ${unitVat})</i>`:''}</span></div></li>`;
   }).join('');
   $('cmp').style.gridTemplateColumns = `repeat(${TYPES[typeKey].terms.length},1fr)`;
   $('cmp').innerHTML = TYPES[typeKey].terms.map(t => {
