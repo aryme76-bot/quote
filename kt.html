@@ -441,22 +441,13 @@ function buildPdfStyles(){
   css += `.pdfmode{display:none;width:640px;padding:0;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
 .pdfmode .page{max-width:none}
 .pdfmode .calc .sum dt.g{color:var(--ink);font-weight:700}
-.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}
-.pdfmode.narrow .calc{grid-template-columns:1fr 1.15fr;gap:12px}
-.pdfmode.narrow .calc .sum{padding-left:12px;column-gap:10px}
-.pdfmode.narrow .calc .sum dt,.pdfmode.narrow .total .side dt,.pdfmode.narrow .total .big .vat,.pdfmode.narrow .meta dt{white-space:nowrap}
-.pdfmode.narrow .total{grid-template-columns:1fr 1fr;gap:12px}
-.pdfmode.narrow .total .big{padding-right:12px}
-.pdfmode.narrow .total .big .amount{font-size:26px}
-.pdfmode.narrow .sec-head small{font-size:9.5px}
-.pdfmode.narrow .cmp .tile .v{font-size:13px}\n`;
+.pdfmode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:15px}\n`;
   const st = document.createElement('style'); st.id = 'pdfmode-css'; st.textContent = css; document.head.appendChild(st);
 }
-const PHONE_W = 400;   // 휴대폰용 JPG 폭(CSS px): 표 형식을 이 폭으로 그리면 휴대폰 화면 비율에 맞는다
-async function renderQuoteCanvas(mode){
-  const W = mode === 'phone' ? PHONE_W : 640, SCALE = mode === 'phone' ? 2.5 : 1.6;
+async function renderQuoteCanvas(){
+  const W = 640, SCALE = 1.6;
   buildPdfStyles();
-  const wrap = document.createElement('div'); wrap.className = 'pdfmode' + (mode === 'phone' ? ' narrow' : ''); wrap.style.width = W + 'px';
+  const wrap = document.createElement('div'); wrap.className = 'pdfmode'; wrap.style.width = W + 'px';
   const clone = document.querySelector('main.page').cloneNode(true);
   clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
     const g = el.classList.contains('grand');
@@ -532,11 +523,27 @@ async function shareOrDownload(blob, name){
   setTimeout(() => URL.revokeObjectURL(url), 20000);
   toast(`<b>${name}</b><br>저장 위치: ${whereSaved()}`);
 }
+// JPG 저장용: 인쇄·PDF와 동일한 문서 레이아웃을 A4 비율 캔버스에 위아래 여백을 두고 그린다 (긴 스크롤 카드 대신 1장짜리 문서 형태)
+async function renderA4Canvas(){
+  const src = await renderQuoteCanvas();
+  const DPI = 150, MM = DPI / 25.4;
+  const mL = 20*MM, mT = 20*MM, mB = 15*MM;   // 한글 편집용지 '보통' 기본값과 동일한 여백(위20·아래15·좌우20mm)
+  const pageW = 210*MM, pageH = 297*MM;
+  const W = pageW - 2*mL, H = pageH - mT - mB;
+  let w = W, h = W * src.height / src.width;
+  if (h > H){ h = H; w = H * src.width / src.height; }
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(pageW); canvas.height = Math.round(pageH);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(src, mL + (W - w)/2, mT, w, h);
+  return canvas;
+}
 async function shareJpg(){
   const btn = document.getElementById('btnShare'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = '준비 중…';
   try {
-    const canvas = await renderPhoneCanvas();
+    const canvas = await renderA4Canvas();
     const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
     await shareBlob(blob, pdfName().replace(/\.pdf$/, '.jpg'));
   } catch(e) { alert('공유하지 못했습니다. (' + (e && e.message || e) + ')'); }
@@ -546,39 +553,12 @@ async function saveJpg(){
   const btn = document.getElementById('btnJpg'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'JPG 만드는 중…';
   try {
-    const canvas = await renderPhoneCanvas();
+    const canvas = await renderA4Canvas();
     const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
     await shareOrDownload(blob, pdfName().replace(/\.pdf$/, '.jpg'));
   } catch(e) {
     alert('JPG를 만들지 못했습니다. (' + (e && e.message || e) + ')');
   } finally { btn.disabled = false; btn.textContent = label; }
-}
-function buildPhoneStyles(){
-  if (document.getElementById('phonemode-css')) return;
-  const st = document.createElement('style'); st.id = 'phonemode-css';
-  st.textContent = `.phonemode{display:none;width:${PHONE_W}px;background:#fff;color:#1b1b1f;--bg:#fff;--page:#fff;--ink:#1b1b1f;--muted:#6f7076;--faint:#9a9ba1;--panel:#f3f3f5;--line:#e4e4e8;--head:#1b1b1f;--head-ink:#fff;--red:${PDF_BRAND.red};--red-soft:${PDF_BRAND.soft};--red-line:${PDF_BRAND.line}}
-.phonemode .page{max-width:none}`;
-  document.head.appendChild(st);
-}
-async function renderPhoneCanvas(){
-  buildPhoneStyles();
-  const wrap = document.createElement('div'); wrap.className = 'phonemode';
-  const clone = document.querySelector('main.page').cloneNode(true);
-  clone.querySelectorAll('[style*="display:contents"],[style*="display: contents"]').forEach(el => {
-    const g = el.classList.contains('grand');
-    while (el.firstChild){ const c = el.firstChild; if (g && c.nodeType === 1) c.classList.add('g'); el.parentNode.insertBefore(c, el); }
-    el.remove();
-  });
-  wrap.appendChild(clone); document.body.appendChild(wrap);
-  try {
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    // windowWidth를 좁게 주면 화면용 모바일 CSS(카드형)가 그대로 적용된다
-    return await html2canvas(wrap, {
-      scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, width: PHONE_W, windowWidth: PHONE_W,
-      onclone: doc => { const w = doc.querySelector('.phonemode'); w.style.display = 'block'; w.style.position = 'static';
-        const g = doc.createElement('style'); g.textContent = '.phonemode .calc .sum dt.g{color:var(--ink);font-weight:700}.phonemode .calc .sum dd.g{color:var(--red);font-weight:900;font-size:20px}'; doc.head.appendChild(g); }
-    });
-  } finally { wrap.remove(); }
 }
 async function savePdf(){
   const btn = document.getElementById('btnPdf'); const label = btn.textContent;
