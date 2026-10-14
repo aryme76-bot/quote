@@ -309,6 +309,7 @@
         <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
         <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
         <div class="grand" style="display:contents"><dt>월 합계</dt><dd><span data-v="total"></span>원</dd></div>
+        <dt>객실당 단가</dt><dd><span data-v="perRoom"></span>원</dd>
       </dl>
     </div>
   </section>
@@ -413,7 +414,7 @@ function render(){
   $('settopChkWrap').hidden = (typeKey !== 're');
   const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn);
   const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
-              netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat),
+              netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat), perRoom: won(Math.round(d.total / rooms)),
               internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, tvTotal: d.tvTotal, settop: won(d.settop),
               formula: d.lines.map(l => l.total < 0 ? `(${won(l.total)})` : won(l.total)).join(' + ') };
   document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
