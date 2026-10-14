@@ -354,18 +354,18 @@ function render(){
   document.getElementById('rows').innerHTML = [
     row('인터넷 베이직','기본료','500M','3년',d.internet,P.internet.base,d.parts[0]),
     row('지니TV Biz 기본','기본료','라이트','3년',d.tvBasic,P.tvBasic.base,d.parts[1]),
-    row('','모뎀 임대료','올인원2','-',d.tvBasic,P.tvBasic.rental,d.parts[2]),
+    row('','셋탑박스 임대료','올인원2','-',d.tvBasic,P.tvBasic.rental,d.parts[2]),
     row('지니TV Biz 추가','기본료','라이트','3년',d.tvAdd,P.tvAdd.base,d.parts[3]),
-    row('','모뎀 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
+    row('','셋탑박스 임대료','올인원2','-',d.tvAdd,P.tvAdd.rental,d.parts[4]),
     row('Wi-Fi 단말기','기기 임대료','-','3년',d.wifi,P.wifi.base,d.parts[5],true),
   ].join('');
   const mi = (svc, sub, qty, unit, total, hl, cls) => { const vat = Math.round(total*0.1); return `<li class="${cls||''}"><div class="l"><b>${svc}</b><span>${sub}</span></div><div class="r"><b class="${hl?'hl':''}">${won(total+vat)}</b><span>${qty} × ${won(unit)} = ${won(total)}${unit?` <i>(부가세 ${won(vat)})</i>`:''}</span></div></li>`; };
   document.getElementById('mrows').innerHTML = [
     mi('인터넷 베이직','기본료 · 500M · 3년',d.internet,P.internet.base,d.parts[0]),
     mi('지니TV Biz 기본','기본료 · 라이트 · 3년',d.tvBasic,P.tvBasic.base,d.parts[1]),
-    mi('└ 모뎀 임대료','올인원2',d.tvBasic,P.tvBasic.rental,d.parts[2],false,'sub'),
+    mi('└ 셋탑박스 임대료','올인원2',d.tvBasic,P.tvBasic.rental,d.parts[2],false,'sub'),
     mi('지니TV Biz 추가','기본료 · 라이트 · 3년',d.tvAdd,P.tvAdd.base,d.parts[3]),
-    mi('└ 모뎀 임대료','올인원2',d.tvAdd,P.tvAdd.rental,d.parts[4],false,'sub'),
+    mi('└ 셋탑박스 임대료','올인원2',d.tvAdd,P.tvAdd.rental,d.parts[4],false,'sub'),
     mi('Wi-Fi 단말기','기기 임대료 · 3년',d.wifi,P.wifi.base,d.parts[5],true),
   ].join('');
   document.getElementById('minst').innerHTML = d.inst.map(i =>
