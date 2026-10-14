@@ -273,6 +273,7 @@
         <dt>공급가액</dt><dd><span data-v="supply"></span>원</dd>
         <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
         <div class="grand" style="display:contents"><dt>월 합계</dt><dd><span data-v="total"></span>원</dd></div>
+        <dt>객실당 단가</dt><dd><span data-v="perRoom"></span>원</dd>
       </dl>
     </div>
   </section>
@@ -347,7 +348,7 @@ function render(){
   const rooms = Math.max(1, Math.min(999, parseInt(document.getElementById('inRooms').value, 10) || 1));
   const d = compute(rooms);
   const v = { rooms, date: document.getElementById('inDate').value, to: (document.getElementById('inTo').value.trim() || '고객사') + ' 귀중', total: won(d.total), supply: won(d.supply), vat: won(d.vat),
-              supplyBefore: won(d.supplyBefore), installWd: won(d.installWd), installWe: won(d.installWe),
+              supplyBefore: won(d.supplyBefore), installWd: won(d.installWd), installWe: won(d.installWe), perRoom: won(Math.round(d.total / rooms)),
               internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, formula: d.parts.map(won).join(' + ') };
   document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
   document.title = `KT 멀티룸 자동 견적서`;
