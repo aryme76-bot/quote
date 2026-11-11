@@ -100,6 +100,7 @@
   .cmp .tile .s{font-size:12px;color:var(--muted)}
   .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
   #adultChkWrap[hidden]{display:none}
+  #adultQtyWrap[hidden]{display:none}
   .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   .panel input.to{width:190px}
   .panel label.chk{color:var(--ink);font-weight:500}
@@ -252,6 +253,7 @@
   <label class="chk"><input id="inDisc" type="checkbox" aria-label="인터넷 회선당 6,000원 할인"> 인터넷 회선당 6,000원 할인 (VAT 별도)</label>
   <label class="chk" id="settopChkWrap"><input id="inSettop" type="checkbox" checked aria-label="셋탑임대료 반영 여부"> 셋탑임대료 반영</label>
   <label class="chk" id="adultChkWrap"><input id="inAdult" type="checkbox" aria-label="성인방송 추가 여부"> 성인방송 추가 (비키, 재약정)</label>
+  <label id="adultQtyWrap" hidden>성인방송 회선수 <input id="inAdultQty" type="number" min="1" max="999" value="1" inputmode="numeric" aria-label="성인방송 회선수"></label>
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
   <span class="auto">자동 산정 · 인터넷 <b data-v="internet"></b>회선 · 주TV <b data-v="tvBasic"></b> · 추가TV <b data-v="tvAdd"></b> · Wi-Fi <b data-v="wifi"></b></span>
@@ -376,7 +378,7 @@ const WIFI = 0;             // Wi-Fi 무료
 const ROOMS_PER_LINE = 8;   // 1:8 구조
 const won = n => n.toLocaleString('ko-KR');
 
-function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn){
+function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty){
   const internet = Math.ceil(rooms / ROOMS_PER_LINE);
   const tvBasic = internet, tvAdd = rooms - internet, wifi = rooms, tvTotal = rooms;
   const net = NET[netKey], tv = TV[tvKey];
@@ -391,7 +393,7 @@ function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn){
     { svc: 'IPTV 추가', kind:'기본료', prod: tv.name, qty: tvAdd, unit: tv.add[term] },
     { svc: '셋탑박스', kind:'임대료', prod:'-', qty: tvTotal, unit: settop },
   );
-  if (adult) lines.push({ svc: '성인방송', kind:'추가', prod:'비키', qty: rooms, unit: -1100, hl:true });
+  if (adult) lines.push({ svc: '성인방송', kind:'추가', prod:'비키', qty: Math.max(1, Math.min(rooms, adultQty)), unit: -1100, hl:true });
   lines.push(
     { svc: 'Wi-Fi', kind:'기기 임대료', prod:'100M/기가', qty: wifi, unit: WIFI },
   );
@@ -416,8 +418,11 @@ function render(){
   const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
   const term = +$('inTerm').value, typeKey = $('inType').value, netKey = $('inNet').value, tvKey = $('inTv').value, disc = $('inDisc').checked;
   const settopOn = $('inSettop').checked, adultOn = $('inAdult').checked;
+  const adultQty = Math.max(1, Math.min(rooms, parseInt($('inAdultQty').value, 10) || 1));
+  $('inAdultQty').value = adultQty; $('inAdultQty').max = rooms;
   $('adultChkWrap').hidden = (typeKey !== 're');
-  const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn);
+  $('adultQtyWrap').hidden = !(typeKey === 're' && adultOn);
+  const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty);
   const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
               netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat), perRoom: won(Math.round(d.total / rooms)),
               internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, tvTotal: d.tvTotal, settop: won(d.settop),
@@ -440,7 +445,7 @@ function render(){
   }).join('');
   $('cmp').style.gridTemplateColumns = `repeat(${TYPES[typeKey].terms.length},1fr)`;
   $('cmp').innerHTML = TYPES[typeKey].terms.map(t => {
-    const c = compute(rooms, t, typeKey, netKey, tvKey, disc, settopOn, adultOn);
+    const c = compute(rooms, t, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty);
     return `<div class="tile${t===term?' on':''}"><div class="t">${t}년 약정</div><div class="v">${won(c.total)}원</div><div class="s">공급가액 ${won(c.supply)}원 · 객실당 ${won(Math.round(c.supply/rooms))}원</div></div>`;
   }).join('');
   $('settopnote').textContent = d.settop
@@ -455,7 +460,7 @@ function render(){
 
 function pdfName(){ const r = $('inRooms').value; const d = $('inDate').value.replace(/\D/g,''); return `LG_견적서_${TYPES[$('inType').value].name}_${r}객실_${d}.pdf`; }
 // ── 입력값을 URL 파라미터로 저장/복원 (크롬으로 열기 시 그대로 유지) ──
-const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inSettop','inAdult','inDate','inTo'];
+const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inSettop','inAdult','inAdultQty','inDate','inTo'];
 function stateUrl(){
   const q = new URLSearchParams();
   STATE_FIELDS.forEach(id => { const el = document.getElementById(id); if (!el) return; q.set(id.replace(/^in/, '').toLowerCase(), el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
@@ -482,7 +487,7 @@ function openInChrome(){
   const restored = restoreState(); if (restored){ fillTerm(); fillTv(); const q = new URLSearchParams(location.search); if (q.has('term')) $('inTerm').value = q.get('term'); if (q.has('tv')) $('inTv').value = q.get('tv'); if (q.has('disc')) $('inDisc').checked = q.get('disc') === '1'; if (q.has('adult')) $('inAdult').checked = q.get('adult') === '1'; }
   if (!restored) $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
   $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; $('inSettop').checked = true; $('inAdult').checked = false; render(); });
-  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc','inSettop','inAdult'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
+  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc','inSettop','inAdult','inAdultQty'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
   render();
   try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
   if (/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
