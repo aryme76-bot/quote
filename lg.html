@@ -99,7 +99,6 @@
   .cmp .tile.on .v{color:var(--red)}
   .cmp .tile .s{font-size:12px;color:var(--muted)}
   .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
-  #settopChkWrap[hidden]{display:none}
   #adultChkWrap[hidden]{display:none}
   .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   .panel input.to{width:190px}
@@ -251,7 +250,7 @@
   <label>인터넷 <select id="inNet" aria-label="인터넷 상품"></select></label>
   <label>IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
   <label class="chk"><input id="inDisc" type="checkbox" aria-label="인터넷 회선당 6,000원 할인"> 인터넷 회선당 6,000원 할인 (VAT 별도)</label>
-  <label class="chk" id="settopChkWrap"><input id="inSettop" type="checkbox" checked aria-label="셋탑임대료 반영 여부"> 셋탑임대료 반영 (재약정)</label>
+  <label class="chk" id="settopChkWrap"><input id="inSettop" type="checkbox" checked aria-label="셋탑임대료 반영 여부"> 셋탑임대료 반영</label>
   <label class="chk" id="adultChkWrap"><input id="inAdult" type="checkbox" aria-label="성인방송 추가 여부"> 성인방송 추가 (비키, 재약정)</label>
   <label>견적일자 <input id="inDate" class="date" type="text" aria-label="견적일자"></label>
   <label>수신 <input id="inTo" class="date to" type="text" placeholder="예: OO호텔 대표님" aria-label="수신자"></label>
@@ -381,7 +380,7 @@ function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn){
   const internet = Math.ceil(rooms / ROOMS_PER_LINE);
   const tvBasic = internet, tvAdd = rooms - internet, wifi = rooms, tvTotal = rooms;
   const net = NET[netKey], tv = TV[tvKey];
-  const settop = (typeKey === 're' && settopOn === false) ? 0 : TYPES[typeKey].settop(tvKey);
+  const settop = settopOn === false ? 0 : TYPES[typeKey].settop(tvKey);
   const adult = typeKey === 're' && adultOn;
   const lines = [
     { svc: net.name, kind:'기본료', prod:'인터넷', qty: internet, unit: net.price[term] },
@@ -417,7 +416,6 @@ function render(){
   const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
   const term = +$('inTerm').value, typeKey = $('inType').value, netKey = $('inNet').value, tvKey = $('inTv').value, disc = $('inDisc').checked;
   const settopOn = $('inSettop').checked, adultOn = $('inAdult').checked;
-  $('settopChkWrap').hidden = (typeKey !== 're');
   $('adultChkWrap').hidden = (typeKey !== 're');
   const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn);
   const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
@@ -447,9 +445,9 @@ function render(){
   }).join('');
   $('settopnote').textContent = d.settop
     ? `셋탑박스 임대료는 TV 1대당 월 ${won(d.settop)}원으로 총 ${d.tvTotal}대가 포함되었으며, Wi-Fi(100M/기가)는 무료입니다.`
-    : (typeKey === 're' && !settopOn)
+    : !settopOn
       ? `셋탑박스 임대료 반영 체크를 해제해 월 0원으로 처리했으며, Wi-Fi(100M/기가)는 무료입니다.`
-      : `${TV[tvKey].name} 재약정은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
+      : `${TV[tvKey].name} ${TYPES[typeKey].name}은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
   $('discnote').textContent = disc
     ? `인터넷 1회선당 ${won(NET_DISC)}원(VAT 별도) 할인이 적용되어 공급가액에서 월 ${won(d.discTotal)}원(인터넷 ${d.internet}회선)이 차감되었습니다.`
     : `인터넷 회선당 할인은 적용되지 않았습니다.`;
