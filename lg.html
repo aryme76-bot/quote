@@ -101,6 +101,13 @@
   .panel label{display:flex;align-items:center;gap:8px;color:var(--muted)}
   #adultChkWrap[hidden]{display:none}
   #adultQtyWrap[hidden]{display:none}
+  #tvWrap[hidden]{display:none}
+  #tvSlotsSection[hidden]{display:none}
+  .tvslots{display:flex;flex-direction:column;gap:10px}
+  .tvslot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .tvslot label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .tvslot select{font:inherit;font-weight:700;font-size:13px;padding:6px 8px;border:2px solid var(--line);border-radius:8px;background:var(--page);color:var(--ink)}
+  .tvslot input{width:70px;font:inherit;font-weight:700;font-size:14px;padding:6px 8px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   .panel input{width:90px;font:inherit;font-weight:700;font-size:18px;padding:6px 10px;border:2px solid var(--red);border-radius:8px;background:var(--page);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
   .panel input.to{width:190px}
   .panel label.chk{color:var(--ink);font-weight:500}
@@ -249,7 +256,7 @@
   <label>구분 <select id="inType" aria-label="구분"><option value="new">신규</option><option value="re">재약정</option></select></label>
   <label>약정 <select id="inTerm" aria-label="약정"><option value="3">3년</option><option value="5">5년</option></select></label>
   <label>인터넷 <select id="inNet" aria-label="인터넷 상품"></select></label>
-  <label>IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
+  <label id="tvWrap">IPTV <select id="inTv" aria-label="IPTV 상품"></select></label>
   <label class="chk"><input id="inDisc" type="checkbox" aria-label="인터넷 회선당 6,000원 할인"> 인터넷 회선당 6,000원 할인 (VAT 별도)</label>
   <label class="chk" id="settopChkWrap"><input id="inSettop" type="checkbox" checked aria-label="셋탑임대료 반영 여부"> 셋탑임대료 반영</label>
   <label class="chk" id="adultChkWrap"><input id="inAdult" type="checkbox" aria-label="성인방송 추가 여부"> 성인방송 추가 (비키, 재약정)</label>
@@ -288,6 +295,27 @@
       <dt>부가세 10%</dt><dd><span data-v="vat"></span>원</dd>
       <dt>설치비</dt><dd>무료</dd>
     </dl>
+  </section>
+
+  <section class="section noprint" id="tvSlotsSection" hidden>
+    <div class="sec-head"><h2>TV 상품 구성 (재약정)</h2><small>최대 3종 혼합 가능 · 직원용 입력 화면이며 인쇄·저장에는 표시되지 않습니다</small></div>
+    <div class="tvslots">
+      <div class="tvslot">
+        <label>TV 상품1 <select id="inTv1" aria-label="TV 상품1"></select></label>
+        <label>주 회선수 <input id="inTv1Main" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품1 주 회선수"></label>
+        <label>추가 회선수 <input id="inTv1Add" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품1 추가 회선수"></label>
+      </div>
+      <div class="tvslot">
+        <label>TV 상품2 <select id="inTv2" aria-label="TV 상품2"></select></label>
+        <label>주 회선수 <input id="inTv2Main" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품2 주 회선수"></label>
+        <label>추가 회선수 <input id="inTv2Add" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품2 추가 회선수"></label>
+      </div>
+      <div class="tvslot">
+        <label>TV 상품3 <select id="inTv3" aria-label="TV 상품3"></select></label>
+        <label>주 회선수 <input id="inTv3Main" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품3 주 회선수"></label>
+        <label>추가 회선수 <input id="inTv3Add" type="number" min="0" max="999" value="0" inputmode="numeric" aria-label="TV 상품3 추가 회선수"></label>
+      </div>
+    </div>
   </section>
 
   <section class="section">
@@ -378,21 +406,40 @@ const WIFI = 0;             // Wi-Fi 무료
 const ROOMS_PER_LINE = 8;   // 1:8 구조
 const won = n => n.toLocaleString('ko-KR');
 
-function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty){
+function compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty, tvSlots){
   const internet = Math.ceil(rooms / ROOMS_PER_LINE);
-  const tvBasic = internet, tvAdd = rooms - internet, wifi = rooms, tvTotal = rooms;
-  const net = NET[netKey], tv = TV[tvKey];
-  const settop = settopOn === false ? 0 : TYPES[typeKey].settop(tvKey);
+  const wifi = rooms, tvTotal = rooms;
+  const net = NET[netKey];
   const adult = typeKey === 're' && adultOn;
   const lines = [
     { svc: net.name, kind:'기본료', prod:'인터넷', qty: internet, unit: net.price[term] },
   ];
   if (disc) lines.push({ svc: '인터넷 할인', kind:'회선당 할인', prod:'-', qty: internet, unit: -NET_DISC, hl:true });
-  lines.push(
-    { svc: 'IPTV 주', kind:'기본료', prod: tv.name, qty: tvBasic, unit: tv.main[term] },
-    { svc: 'IPTV 추가', kind:'기본료', prod: tv.name, qty: tvAdd, unit: tv.add[term] },
-    { svc: '셋탑박스', kind:'임대료', prod:'-', qty: tvTotal, unit: settop },
-  );
+
+  let tvBasic = 0, tvAdd = 0, settop = 0;
+  if (typeKey === 're' && tvSlots) {
+    tvSlots.forEach(slot => {
+      const tv = TV[slot.tvKey];
+      if (slot.mainQty > 0) lines.push({ svc: 'IPTV 주', kind:'기본료', prod: tv.name, qty: slot.mainQty, unit: tv.main[term] });
+      if (slot.addQty > 0) lines.push({ svc: 'IPTV 추가', kind:'기본료', prod: tv.name, qty: slot.addQty, unit: tv.add[term] });
+      const qty = slot.mainQty + slot.addQty;
+      if (qty > 0) {
+        const rate = settopOn === false ? 0 : TYPES.re.settop(slot.tvKey);
+        lines.push({ svc: '셋탑박스', kind:'임대료', prod: tv.name, qty, unit: rate });
+        settop = rate;
+      }
+      tvBasic += slot.mainQty; tvAdd += slot.addQty;
+    });
+  } else {
+    const tv = TV[tvKey];
+    tvBasic = internet; tvAdd = rooms - internet;
+    settop = settopOn === false ? 0 : TYPES[typeKey].settop(tvKey);
+    lines.push(
+      { svc: 'IPTV 주', kind:'기본료', prod: tv.name, qty: tvBasic, unit: tv.main[term] },
+      { svc: 'IPTV 추가', kind:'기본료', prod: tv.name, qty: tvAdd, unit: tv.add[term] },
+      { svc: '셋탑박스', kind:'임대료', prod:'-', qty: tvTotal, unit: settop },
+    );
+  }
   if (adult) lines.push({ svc: '성인방송', kind:'추가', prod:'비키', qty: Math.max(1, Math.min(rooms, adultQty)), unit: -1100, hl:true });
   lines.push(
     { svc: 'Wi-Fi', kind:'기기 임대료', prod:'100M/기가', qty: wifi, unit: WIFI },
@@ -413,6 +460,28 @@ function fillTv(){
   $('inTv').innerHTML = TYPES[typeKey].tv.map(k=>`<option value="${k}">${TV[k].name}</option>`).join('');
   $('inTv').value = TYPES[typeKey].tv.includes(cur) ? cur : TYPES[typeKey].tv[0];
 }
+function fillTvSlotOptions(){
+  const opts = TYPES.re.tv.map(k=>`<option value="${k}">${TV[k].name}</option>`).join('');
+  ['inTv1','inTv2','inTv3'].forEach(id => { $(id).innerHTML = opts; });
+}
+function initTvSlotsDefault(){
+  const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
+  const internet = Math.ceil(rooms / ROOMS_PER_LINE);
+  $('inTv1').value = TYPES.re.tv.includes($('inTv').value) ? $('inTv').value : TYPES.re.tv[0];
+  $('inTv1Main').value = internet;
+  $('inTv1Add').value = rooms - internet;
+  $('inTv2').value = TYPES.re.tv[0]; $('inTv2Main').value = 0; $('inTv2Add').value = 0;
+  $('inTv3').value = TYPES.re.tv[0]; $('inTv3Main').value = 0; $('inTv3Add').value = 0;
+}
+function readTvSlots(rooms){
+  return [1,2,3].map(i => {
+    const mainQty = Math.max(0, Math.min(rooms, parseInt($(`inTv${i}Main`).value, 10) || 0));
+    const addQty = Math.max(0, Math.min(rooms, parseInt($(`inTv${i}Add`).value, 10) || 0));
+    $(`inTv${i}Main`).value = mainQty; $(`inTv${i}Main`).max = rooms;
+    $(`inTv${i}Add`).value = addQty; $(`inTv${i}Add`).max = rooms;
+    return { tvKey: $(`inTv${i}`).value, mainQty, addQty };
+  });
+}
 
 function render(){
   const rooms = Math.max(1, Math.min(999, parseInt($('inRooms').value, 10) || 1));
@@ -422,9 +491,15 @@ function render(){
   $('inAdultQty').value = adultQty; $('inAdultQty').max = rooms;
   $('adultChkWrap').hidden = (typeKey !== 're');
   $('adultQtyWrap').hidden = !(typeKey === 're' && adultOn);
-  const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty);
+  $('tvWrap').hidden = (typeKey === 're');
+  $('tvSlotsSection').hidden = (typeKey !== 're');
+  const tvSlots = typeKey === 're' ? readTvSlots(rooms) : null;
+  const d = compute(rooms, term, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty, tvSlots);
+  const tvName = typeKey === 're'
+    ? ([...new Set(tvSlots.filter(s => s.mainQty + s.addQty > 0).map(s => TV[s.tvKey].name))].join(' · ') || TV[tvSlots[0].tvKey].name)
+    : TV[tvKey].name;
   const v = { rooms, date: $('inDate').value, to: ($('inTo').value.trim() || '고객사') + ' 귀중', typeLabel: TYPES[typeKey].name, termLabel: term+'년',
-              netName: NET[netKey].name, tvName: TV[tvKey].name, total: won(d.total), supply: won(d.supply), vat: won(d.vat), perRoom: won(Math.round(d.total / rooms)),
+              netName: NET[netKey].name, tvName, total: won(d.total), supply: won(d.supply), vat: won(d.vat), perRoom: won(Math.round(d.total / rooms)),
               internet: d.internet, tvBasic: d.tvBasic, tvAdd: d.tvAdd, wifi: d.wifi, tvTotal: d.tvTotal, settop: won(d.settop),
               formula: d.lines.map(l => l.total < 0 ? `(${won(l.total)})` : won(l.total)).join(' + ') };
   document.querySelectorAll('[data-v]').forEach(el => { el.textContent = v[el.dataset.v]; });
@@ -445,14 +520,23 @@ function render(){
   }).join('');
   $('cmp').style.gridTemplateColumns = `repeat(${TYPES[typeKey].terms.length},1fr)`;
   $('cmp').innerHTML = TYPES[typeKey].terms.map(t => {
-    const c = compute(rooms, t, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty);
+    const c = compute(rooms, t, typeKey, netKey, tvKey, disc, settopOn, adultOn, adultQty, tvSlots);
     return `<div class="tile${t===term?' on':''}"><div class="t">${t}년 약정</div><div class="v">${won(c.total)}원</div><div class="s">공급가액 ${won(c.supply)}원 · 객실당 ${won(Math.round(c.supply/rooms))}원</div></div>`;
   }).join('');
-  $('settopnote').textContent = d.settop
-    ? `셋탑박스 임대료는 TV 1대당 월 ${won(d.settop)}원으로 총 ${d.tvTotal}대가 포함되었으며, Wi-Fi(100M/기가)는 무료입니다.`
-    : !settopOn
+  if (typeKey === 're') {
+    const active = tvSlots.filter(s => s.mainQty + s.addQty > 0);
+    $('settopnote').textContent = !settopOn
       ? `셋탑박스 임대료 반영 체크를 해제해 월 0원으로 처리했으며, Wi-Fi(100M/기가)는 무료입니다.`
-      : `${TV[tvKey].name} ${TYPES[typeKey].name}은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
+      : active.length === 0
+        ? `TV 상품 회선수가 입력되지 않았습니다. Wi-Fi(100M/기가)는 무료입니다.`
+        : `셋탑박스 임대료는 상품별로 ${active.map(s => `${TV[s.tvKey].name} ${TYPES.re.settop(s.tvKey) ? won(TYPES.re.settop(s.tvKey))+'원' : '없음'}(${s.mainQty+s.addQty}대)`).join(', ')}이 적용되었으며, Wi-Fi(100M/기가)는 무료입니다.`;
+  } else {
+    $('settopnote').textContent = d.settop
+      ? `셋탑박스 임대료는 TV 1대당 월 ${won(d.settop)}원으로 총 ${d.tvTotal}대가 포함되었으며, Wi-Fi(100M/기가)는 무료입니다.`
+      : !settopOn
+        ? `셋탑박스 임대료 반영 체크를 해제해 월 0원으로 처리했으며, Wi-Fi(100M/기가)는 무료입니다.`
+        : `${TV[tvKey].name} ${TYPES[typeKey].name}은 셋탑박스 임대료가 없으며, Wi-Fi(100M/기가)도 무료입니다.`;
+  }
   $('discnote').textContent = disc
     ? `인터넷 1회선당 ${won(NET_DISC)}원(VAT 별도) 할인이 적용되어 공급가액에서 월 ${won(d.discTotal)}원(인터넷 ${d.internet}회선)이 차감되었습니다.`
     : `인터넷 회선당 할인은 적용되지 않았습니다.`;
@@ -460,7 +544,8 @@ function render(){
 
 function pdfName(){ const r = $('inRooms').value; const d = $('inDate').value.replace(/\D/g,''); return `LG_견적서_${TYPES[$('inType').value].name}_${r}객실_${d}.pdf`; }
 // ── 입력값을 URL 파라미터로 저장/복원 (크롬으로 열기 시 그대로 유지) ──
-const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inSettop','inAdult','inAdultQty','inDate','inTo'];
+const STATE_FIELDS = ['inRooms','inType','inTerm','inNet','inTv','inDisc','inSettop','inAdult','inAdultQty',
+  'inTv1','inTv1Main','inTv1Add','inTv2','inTv2Main','inTv2Add','inTv3','inTv3Main','inTv3Add','inDate','inTo'];
 function stateUrl(){
   const q = new URLSearchParams();
   STATE_FIELDS.forEach(id => { const el = document.getElementById(id); if (!el) return; q.set(id.replace(/^in/, '').toLowerCase(), el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value); });
@@ -481,13 +566,14 @@ function openInChrome(){
 (function init(){
   $('inNet').innerHTML = Object.entries(NET).map(([k,o])=>`<option value="${k}">${o.name}</option>`).join('');
   $('inNet').value = 'slim';
-  fillTerm(); fillTv();
+  fillTerm(); fillTv(); fillTvSlotOptions();
   $('inDisc').checked = TYPES[$('inType').value].discDefault;
   const t = new Date();
   const restored = restoreState(); if (restored){ fillTerm(); fillTv(); const q = new URLSearchParams(location.search); if (q.has('term')) $('inTerm').value = q.get('term'); if (q.has('tv')) $('inTv').value = q.get('tv'); if (q.has('disc')) $('inDisc').checked = q.get('disc') === '1'; if (q.has('adult')) $('inAdult').checked = q.get('adult') === '1'; }
   if (!restored) $('inDate').value = `${t.getFullYear()}. ${String(t.getMonth()+1).padStart(2,'0')}. ${String(t.getDate()).padStart(2,'0')}`;
-  $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; $('inSettop').checked = true; $('inAdult').checked = false; render(); });
-  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc','inSettop','inAdult','inAdultQty'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
+  if (!restored && $('inType').value === 're') initTvSlotsDefault();
+  $('inType').addEventListener('change', () => { fillTerm(); fillTv(); $('inDisc').checked = TYPES[$('inType').value].discDefault; $('inSettop').checked = true; $('inAdult').checked = false; if ($('inType').value === 're') initTvSlotsDefault(); render(); });
+  ['inRooms','inTerm','inNet','inTv','inDate','inTo','inDisc','inSettop','inAdult','inAdultQty','inTv1','inTv1Main','inTv1Add','inTv2','inTv2Main','inTv2Add','inTv3','inTv3Main','inTv3Add'].forEach(id => { const el=$(id); el.addEventListener('input', render); el.addEventListener('change', render); });
   render();
   try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] })) document.getElementById('btnShare').hidden = false; } catch(e){}
   if (/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
